@@ -1,0 +1,30 @@
+# Java / Maven
+target/
+*.class
+*.jar
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Frontend
+node_modules/
+dist/
+
+# Local data and generated files
+/data/
+/uploads/
+/logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
