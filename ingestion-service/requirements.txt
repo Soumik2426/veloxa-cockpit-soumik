@@ -1,0 +1,11 @@
+openpyxl
+python-calamine
+pandas
+pymupdf
+python-docx
+psycopg[binary]
+python-dotenv
+pydantic
+pydantic-settings
+pytest
+sqlalchemy

@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: veloxa-cockpit
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/veloxa_cockpit
+    username: postgres
+    password: Sooumik$4321@
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
