@@ -1,4 +1,3 @@
-
 from app.database.session import SessionLocal
 from app.ingestion.models import IngestionFile, IngestionJob
 from app.discovery.file_discovery import FileDiscoveryService
@@ -59,6 +58,7 @@ class FileRegistrationService:
                 )
 
                 if existing_file:
+                    existing_file.ingestion_job_id = job_id
                     duplicate_count += 1
                     continue
 

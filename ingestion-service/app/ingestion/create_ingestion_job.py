@@ -43,12 +43,22 @@ def create_ingestion_job():
         )
 
         db.add(job)
+
+        # Flush to generate the database-generated UUID
+        db.flush()
+
+        # Capture IDs after flushing
+        source_id = source.id
+        job_id = job.id
+
         db.commit()
 
         print("\nIngestion job created successfully!")
-        print(f"Source ID: {source.id}")
-        print(f"Job ID: {job.id}")
+        print(f"Source ID: {source_id}")
+        print(f"Job ID: {job_id}")
         print(f"Job Status: {job.status}")
+
+        return source_id, job_id
 
     except Exception:
         db.rollback()
