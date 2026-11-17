@@ -9,3 +9,9 @@ pydantic
 pydantic-settings
 pytest
 sqlalchemy
+google-genai
+sqlalchemy
+psycopg[binary]
+python-dotenv
+pgvector
+requests

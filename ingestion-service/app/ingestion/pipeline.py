@@ -1,105 +1,98 @@
-from app.ingestion.services.file_registration import FileRegistrationService
-from app.ingestion.services.file_classifier import FileClassificationService
+import os
+from pathlib import Path
+from uuid import UUID
 
+import requests
+from dotenv import load_dotenv
+
+from app.database.session import SessionLocal
+from app.ingestion.models import IngestionFile
 from app.ingestion.services.csv_persistence import CSVPersistenceService
 from app.ingestion.services.excel_persistence import ExcelPersistenceService
-from app.ingestion.services.pdf_persistence import PDFPersistenceService
-from app.ingestion.services.word_persistence import WordPersistenceService
-from app.ingestion.services.email_persistence import EmailPersistenceService
-from app.ingestion.services.txt_persistence import TXTPersistenceService
+from app.ingestion.services.file_classifier import FileClassificationService
+from app.ingestion.services.file_registration import FileRegistrationService
 
-from app.ingestion.services.pdf_markdown_converter import PDFMarkdownConverter
-from app.ingestion.services.word_markdown_converter import WordMarkdownConverter
-from app.ingestion.services.email_markdown_converter import EmailMarkdownConverter
-from app.ingestion.services.txt_markdown_converter import TXTMarkdownConverter
+
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+UNSTRUCTURED_TYPES = {"PDF", "WORD", "TEXT", "EMAIL"}
 
 
 class UnifiedIngestionPipeline:
+    """Route structured files locally and documents to the AI service."""
 
     def __init__(self):
-
         self.registration_service = FileRegistrationService()
         self.classification_service = FileClassificationService()
-
-        # Structured data processors
         self.structured_processors = {
             "CSV": CSVPersistenceService(),
-            "EXCEL": ExcelPersistenceService()
+            "EXCEL": ExcelPersistenceService(),
         }
-
-        # Document processors
-        self.document_processors = {
-            "PDF": PDFPersistenceService(),
-            "WORD": WordPersistenceService(),
-            "EMAIL": EmailPersistenceService(),
-            "TEXT": TXTPersistenceService()
-        }
-
-        # Markdown converters for unstructured documents
-        self.markdown_converters = {
-            "PDF": PDFMarkdownConverter(),
-            "WORD": WordMarkdownConverter(),
-            "EMAIL": EmailMarkdownConverter(),
-            "TEXT": TXTMarkdownConverter()
-        }
+        self.ai_service_url = os.getenv(
+            "AI_SERVICE_URL", "http://localhost:8000"
+        ).rstrip("/")
 
     def run(self, source_id, job_id):
-
-        print("\n========== UNIFIED INGESTION STARTED ==========\n")
-
-        # Stage 1: Discover and register files
-        print("\n========== FILE DISCOVERY AND REGISTRATION ==========\n")
-
-        self.registration_service.register_files(
-            source_id,
-            job_id
-        )
-
-        # Stage 2: Classify files
-        print("\n========== FILE CLASSIFICATION ==========\n")
-
+        self.registration_service.register_files(source_id, job_id)
         self.classification_service.classify_files(job_id)
 
-        # Stage 3: Process structured data
-        print("\n========== STRUCTURED DATA PROCESSING ==========\n")
-
+        structured_results = {}
         for file_type, processor in self.structured_processors.items():
+            structured_results[file_type] = processor.persist_records(job_id)
 
-            print(f"\nProcessing {file_type} files...")
+        db = SessionLocal()
+        try:
+            documents = db.query(IngestionFile).filter(
+                IngestionFile.ingestion_job_id == job_id,
+                IngestionFile.file_type.in_(UNSTRUCTURED_TYPES),
+            ).all()
+            payload = {
+                "job_id": str(job_id),
+                "documents": [
+                    {
+                        "file_id": str(item.id),
+                        "file_name": item.file_name,
+                        "relative_path": item.relative_path,
+                        "file_type": item.file_type,
+                        "checksum": item.checksum,
+                        "job_id": str(job_id),
+                    }
+                    for item in documents
+                ],
+            }
+        finally:
+            db.close()
 
-            result = processor.persist_records(job_id)
+        document_result = {
+            "documents_received": 0,
+            "successfully_processed": 0,
+            "chunks_generated": 0,
+            "embeddings_generated": 0,
+            "failed_documents": [],
+        }
+        if payload["documents"]:
+            try:
+                response = requests.post(
+                    f"{self.ai_service_url}/api/v1/documents/process",
+                    json=payload,
+                    timeout=(10, 600),
+                )
+                response.raise_for_status()
+                document_result = response.json()
+            except (requests.RequestException, ValueError) as error:
+                document_result["failed_documents"] = [
+                    {"job_id": str(job_id), "error": str(error)}
+                ]
+                document_result["documents_received"] = len(payload["documents"])
 
-            print(f"{file_type} result: {result}")
-
-        # Stage 4: Process unstructured documents
-        print("\n========== DOCUMENT PROCESSING ==========\n")
-
-        for file_type, processor in self.document_processors.items():
-
-            print(f"\nProcessing {file_type} files...")
-
-            result = processor.persist_records(job_id)
-
-            print(f"{file_type} result: {result}")
-
-        # Stage 5: Convert documents into Markdown
-        print("\n========== MARKDOWN GENERATION ==========\n")
-
-        for file_type, converter in self.markdown_converters.items():
-
-            print(f"\nConverting {file_type} files...")
-
-            result = converter.convert_job(job_id)
-
-            print(f"{file_type} Markdown result: {result}")
-
-        print("\n========== INGESTION COMPLETED ==========\n")
-
-        print(f"Source ID: {source_id}")
-        print(f"Job ID: {job_id}")
+        failed = document_result.get("failed_documents", [])
+        status = "COMPLETED" if not failed else "PARTIAL_FAILURE"
+        if failed and len(failed) >= len(payload["documents"]):
+            status = "FAILED"
 
         return {
             "source_id": str(source_id),
             "job_id": str(job_id),
-            "status": "COMPLETED"
+            "status": status,
+            "structured": structured_results,
+            "documents": document_result,
         }

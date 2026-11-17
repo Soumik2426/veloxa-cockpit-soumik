@@ -51,6 +51,22 @@ def save_chunks(chunks: list[dict]):
     try:
         with connection.cursor() as cursor:
 
+            # A changed file is registered with a new ingestion_file UUID.
+            # Replace any prior version of the same source path atomically.
+            source_paths = {
+                chunk["metadata"].get("source_path")
+                for chunk in chunks
+                if chunk["metadata"].get("source_path")
+            }
+            for source_path in source_paths:
+                cursor.execute(
+                    """
+                    DELETE FROM document_chunks
+                    WHERE metadata->>'source_path' = %s
+                    """,
+                    (source_path,),
+                )
+
             # Remove previous chunks for these documents.
             # The replacement happens in the same transaction.
             for file_id in file_ids:

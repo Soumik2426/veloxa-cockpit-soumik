@@ -8,5 +8,9 @@ python-dotenv
 
 # Vector search support
 pgvector
+fastapi
+uvicorn[standard]
+pymupdf
+python-docx
 
 

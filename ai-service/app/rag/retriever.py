@@ -1,3 +1,4 @@
+from pgvector import Vector
 from app.rag.embeddings import generate_embedding
 from app.rag.vector_store import get_connection
 
@@ -27,21 +28,22 @@ def retrieve_relevant_chunks(
     try:
         with connection.cursor() as cursor:
 
+            vector = Vector(query_embedding)
+
             cursor.execute(
                 """
-                SELECT
-                    id,
-                    content,
-                    metadata,
-                    1 - (embedding <=> %s) AS similarity
+                SELECT id,
+                       content,
+                       metadata,
+                       1 - (embedding <=> %s) AS similarity
                 FROM document_chunks
                 WHERE embedding IS NOT NULL
                 ORDER BY embedding <=> %s
-                LIMIT %s
+                    LIMIT %s
                 """,
                 (
-                    query_embedding,
-                    query_embedding,
+                    vector,
+                    vector,
                     top_k
                 )
             )
