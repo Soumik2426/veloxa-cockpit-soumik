@@ -1,0 +1,12 @@
+# Embedding generation
+google-genai
+
+# Database connection
+sqlalchemy
+psycopg[binary]
+python-dotenv
+
+# Vector search support
+pgvector
+
+
