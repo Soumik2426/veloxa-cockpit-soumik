@@ -6,7 +6,8 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Integer,
-    Text
+    Text,
+    UniqueConstraint
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -17,6 +18,15 @@ from app.database.base import Base
 class ExtractedRecord(Base):
 
     __tablename__ = "extracted_record"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "ingestion_file_id",
+            "record_type",
+            "record_key",
+            name="uq_extracted_record_file_type_key"
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
