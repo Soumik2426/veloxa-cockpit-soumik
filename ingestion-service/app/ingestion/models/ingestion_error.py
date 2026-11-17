@@ -5,7 +5,9 @@ from sqlalchemy import (
     String,
     DateTime,
     ForeignKey,
-    Text
+    Text,
+    CheckConstraint,
+    text
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -17,10 +19,18 @@ class IngestionError(Base):
 
     __tablename__ = "ingestion_error"
 
+    __table_args__ = (
+        CheckConstraint(
+            "length(trim(error_message)) > 0",
+            name="ck_ingestion_error_message_not_empty"
+        ),
+    )
+
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
-        default=uuid.uuid4
+        default=uuid.uuid4,
+        server_default=text("gen_random_uuid()")
     )
 
     ingestion_job_id: Mapped[uuid.UUID] = mapped_column(
@@ -55,11 +65,13 @@ class IngestionError(Base):
     error_details: Mapped[dict] = mapped_column(
         JSONB,
         nullable=False,
-        default=dict
+        default=dict,
+        server_default=text("'{}'::jsonb")
     )
 
     occurred_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
+        server_default=text("now()"),
         nullable=False
     )

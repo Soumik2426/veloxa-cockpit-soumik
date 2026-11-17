@@ -6,7 +6,9 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Text,
-    Float
+    CheckConstraint,
+    Float,
+    text
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
@@ -18,10 +20,19 @@ class ExtractionCandidate(Base):
 
     __tablename__ = "extraction_candidate"
 
+    __table_args__ = (
+        CheckConstraint(
+            "confidence_score IS NULL OR "
+            "confidence_score BETWEEN 0 AND 1",
+            name="ck_extraction_candidate_confidence_score"
+        ),
+    )
+
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
-        default=uuid.uuid4
+        default=uuid.uuid4,
+        server_default=text("gen_random_uuid()")
     )
 
     extracted_record_id: Mapped[uuid.UUID] = mapped_column(
@@ -39,7 +50,8 @@ class ExtractionCandidate(Base):
     candidate_data: Mapped[dict] = mapped_column(
         JSONB,
         nullable=False,
-        default=dict
+        default=dict,
+        server_default=text("'{}'::jsonb")
     )
 
     confidence_score: Mapped[float | None] = mapped_column(
@@ -50,12 +62,14 @@ class ExtractionCandidate(Base):
     status: Mapped[str] = mapped_column(
         String(30),
         nullable=False,
-        default="PENDING"
+        default="PENDING",
+        server_default=text("'PENDING'")
     )
 
     review_required: Mapped[bool] = mapped_column(
-        nullable=False,
-        default=False
+        default=False,
+        server_default=text("false"),
+        nullable=False
     )
 
     rejection_reason: Mapped[str | None] = mapped_column(
@@ -66,5 +80,6 @@ class ExtractionCandidate(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
+        server_default=text("now()"),
         nullable=False
     )

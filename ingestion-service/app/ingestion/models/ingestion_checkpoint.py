@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import String, DateTime, ForeignKey, Text
+from sqlalchemy import String, DateTime, ForeignKey, Text, text
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -15,7 +15,8 @@ class IngestionCheckpoint(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
-        default=uuid.uuid4
+        default=uuid.uuid4,
+        server_default=text("gen_random_uuid()")
     )
 
     ingestion_job_id: Mapped[uuid.UUID] = mapped_column(
@@ -38,13 +39,15 @@ class IngestionCheckpoint(Base):
     checkpoint_data: Mapped[dict] = mapped_column(
         JSONB,
         nullable=False,
-        default=dict
+        default=dict,
+        server_default=text("'{}'::jsonb")
     )
 
     status: Mapped[str] = mapped_column(
         String(30),
         nullable=False,
-        default="PENDING"
+        default="PENDING",
+        server_default=text("'PENDING'")
     )
 
     error_message: Mapped[str | None] = mapped_column(
@@ -56,5 +59,6 @@ class IngestionCheckpoint(Base):
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
+        server_default=text("now()"),
         nullable=False
     )

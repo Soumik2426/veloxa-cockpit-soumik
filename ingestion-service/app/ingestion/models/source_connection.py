@@ -1,8 +1,7 @@
-
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import String, DateTime
+from sqlalchemy import String, DateTime, text
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -16,7 +15,8 @@ class SourceConnection(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
-        default=uuid.uuid4
+        default=uuid.uuid4,
+        server_default=text("gen_random_uuid()")
     )
 
     name: Mapped[str] = mapped_column(
@@ -33,18 +33,21 @@ class SourceConnection(Base):
         "configuration",
         JSONB,
         nullable=False,
-        default=dict
+        default=dict,
+        server_default=text("'{}'::jsonb")
     )
 
     status: Mapped[str] = mapped_column(
         String(30),
         nullable=False,
-        default="ACTIVE"
+        default="ACTIVE",
+        server_default=text("'ACTIVE'")
     )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
+        server_default=text("now()"),
         nullable=False
     )
 
@@ -52,5 +55,6 @@ class SourceConnection(Base):
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
+        server_default=text("now()"),
         nullable=False
     )

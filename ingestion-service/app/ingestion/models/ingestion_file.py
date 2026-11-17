@@ -4,10 +4,12 @@ from datetime import datetime, timezone
 from sqlalchemy import (
     String,
     DateTime,
-    BigInteger,
     ForeignKey,
+    BigInteger,
     Integer,
-    UniqueConstraint
+    UniqueConstraint,
+    CheckConstraint,
+    text
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -26,12 +28,21 @@ class IngestionFile(Base):
             "checksum",
             name="uq_ingestion_file_source_path_checksum"
         ),
+        CheckConstraint(
+            "file_size >= 0",
+            name="ck_ingestion_file_file_size"
+        ),
+        CheckConstraint(
+            "version >= 1",
+            name="ck_ingestion_file_version"
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
-        default=uuid.uuid4
+        default=uuid.uuid4,
+        server_default=text("gen_random_uuid()")
     )
 
     source_connection_id: Mapped[uuid.UUID] = mapped_column(
@@ -66,7 +77,8 @@ class IngestionFile(Base):
     file_type: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
-        default="UNKNOWN"
+        default="UNKNOWN",
+        server_default=text("'UNKNOWN'")
     )
 
     checksum: Mapped[str] = mapped_column(
@@ -82,18 +94,21 @@ class IngestionFile(Base):
     status: Mapped[str] = mapped_column(
         String(30),
         nullable=False,
-        default="DISCOVERED"
+        default="DISCOVERED",
+        server_default=text("'DISCOVERED'")
     )
 
     version: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
-        default=1
+        default=1,
+        server_default=text("1")
     )
 
     discovered_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
+        server_default=text("now()"),
         nullable=False
     )
 
