@@ -20,7 +20,7 @@ from app.rag.retriever import retrieve_relevant_chunks
 logger = logging.getLogger(__name__)
 
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
-GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 
 groq_client = (
     Groq(api_key=os.getenv("GROQ_API_KEY"))
