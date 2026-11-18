@@ -1,9 +1,9 @@
-"""Gemini planning and evidence-grounded answer orchestration."""
-
 import json
+import logging
 import os
 
 from google.genai import types
+from groq import Groq
 from pydantic import BaseModel, ValidationError
 
 from app.agent.schemas import (
@@ -17,11 +17,20 @@ from app.rag.embeddings import client
 from app.rag.retriever import retrieve_relevant_chunks
 
 
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+logger = logging.getLogger(__name__)
+
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+
+groq_client = (
+    Groq(api_key=os.getenv("GROQ_API_KEY"))
+    if os.getenv("GROQ_API_KEY")
+    else None
+)
 
 
 class GeminiServiceError(RuntimeError):
-    """A Gemini request failed or returned an invalid structured response."""
+    """Both primary and fallback answer-generation providers failed."""
 
 
 PLANNER_PROMPT = """You route a business question to evidence sources.
@@ -55,7 +64,78 @@ Evidence:
 {evidence}"""
 
 
-def _generate_json(prompt: str, response_model: type[BaseModel]) -> BaseModel:
+def _is_retryable_provider_error(error: Exception) -> bool:
+    """Return whether a provider failure is suitable for fallback."""
+
+    status_code = getattr(error, "status_code", None)
+    if status_code is None:
+        status_code = getattr(error, "code", None)
+
+    if status_code in (408, 409, 429, 500, 502, 503, 504):
+        return True
+
+    # Google GenAI server-side failures are generally temporary.
+    if type(error).__name__ in ("ServerError", "TooManyRequests"):
+        return True
+
+    # Common network and timeout failures.
+    if isinstance(error, (TimeoutError, ConnectionError)):
+        return True
+
+    error_name = type(error).__name__.lower()
+    return any(
+        term in error_name
+        for term in ("timeout", "connection")
+    )
+
+
+def _generate_with_groq(
+    prompt: str,
+    response_model: type[BaseModel],
+) -> BaseModel:
+    """Generate a structured response using Groq."""
+
+    if groq_client is None:
+        raise GeminiServiceError(
+            "Groq fallback is not configured. Check GROQ_API_KEY."
+        )
+
+    schema = json.dumps(response_model.model_json_schema())
+
+    response = groq_client.chat.completions.create(
+        model=GROQ_MODEL,
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "Return only valid JSON matching the following schema. "
+                    "Do not include Markdown or additional text.\n"
+                    f"JSON schema: {schema}"
+                ),
+            },
+            {
+                "role": "user",
+                "content": prompt,
+            },
+        ],
+        response_format={"type": "json_object"},
+        temperature=0.1,
+    )
+
+    content = response.choices[0].message.content
+
+    if not content:
+        raise ValueError("Groq returned an empty response.")
+
+    return response_model.model_validate_json(content)
+
+
+def _generate_json(
+    prompt: str,
+    response_model: type[BaseModel],
+) -> BaseModel:
+    """Try Gemini first and use Groq for temporary provider failures."""
+
     try:
         response = client.models.generate_content(
             model=GEMINI_MODEL,
@@ -66,16 +146,53 @@ def _generate_json(prompt: str, response_model: type[BaseModel]) -> BaseModel:
                 temperature=0.1,
             ),
         )
+
         parsed = getattr(response, "parsed", None)
+
         if isinstance(parsed, response_model):
             return parsed
+
         if not response.text:
-            raise ValueError("Gemini returned no structured response")
+            raise ValueError("Gemini returned no structured response.")
+
         return response_model.model_validate_json(response.text)
+
     except (ValidationError, ValueError) as error:
-        raise GeminiServiceError("Gemini returned an invalid response.") from error
+        raise GeminiServiceError(
+            "Gemini returned an invalid structured response."
+        ) from error
+
     except Exception as error:
-        raise GeminiServiceError("Gemini request failed.") from error
+        logger.exception(
+            "Gemini request failed. Model: %s | Error type: %s",
+            GEMINI_MODEL,
+            type(error).__name__,
+        )
+
+        if not _is_retryable_provider_error(error):
+            raise GeminiServiceError(
+                "Gemini request failed."
+            ) from error
+
+        logger.warning(
+            "Gemini experienced a temporary provider failure. "
+            "Trying Groq fallback model: %s",
+            GROQ_MODEL,
+        )
+
+        try:
+            return _generate_with_groq(prompt, response_model)
+
+        except Exception as groq_error:
+            logger.exception(
+                "Groq fallback failed. Model: %s | Error type: %s",
+                GROQ_MODEL,
+                type(groq_error).__name__,
+            )
+
+            raise GeminiServiceError(
+                "Both Gemini and Groq failed to generate a response."
+            ) from groq_error
 
 
 def _plan(question: str) -> RetrievalPlan:
@@ -83,14 +200,21 @@ def _plan(question: str) -> RetrievalPlan:
         PLANNER_PROMPT.format(question=question),
         RetrievalPlan,
     )
+
     # Remove duplicates and cap terms again at the tool boundary.
     plan.sources = list(dict.fromkeys(plan.sources))
-    plan.search_terms = [term.strip()[:100] for term in plan.search_terms if term.strip()][:6]
+    plan.search_terms = [
+        term.strip()[:100]
+        for term in plan.search_terms
+        if term.strip()
+    ][:6]
+
     return plan
 
 
 def _sql_evidence(rows: list[dict]) -> list[dict]:
     evidence = []
+
     for index, row in enumerate(rows, start=1):
         evidence.append({
             "evidence_id": f"SQL-{index}",
@@ -108,10 +232,14 @@ def _sql_evidence(rows: list[dict]) -> list[dict]:
             "content": row.get("extracted_data"),
             "confidence_score": row.get("confidence_score"),
         })
+
     return evidence
 
 
-def _rag_evidence(chunks: list[dict], start_index: int = 1) -> list[dict]:
+def _rag_evidence(
+    chunks: list[dict],
+    start_index: int = 1,
+) -> list[dict]:
     return [
         {
             "evidence_id": f"RAG-{index}",
@@ -130,22 +258,38 @@ def _rag_evidence(chunks: list[dict], start_index: int = 1) -> list[dict]:
     ]
 
 
-def _confidence(sql_count: int, rag_count: int, conflicts: list[str]) -> ConfidenceAssessment:
+def _confidence(
+    sql_count: int,
+    rag_count: int,
+    conflicts: list[str],
+) -> ConfidenceAssessment:
     if conflicts:
         return ConfidenceAssessment(
             level="low",
-            rationale="Retrieved sources conflict, so the answer cannot be treated as settled.",
+            rationale=(
+                "Retrieved sources conflict, so the answer "
+                "cannot be treated as settled."
+            ),
         )
+
     if sql_count and rag_count:
         return ConfidenceAssessment(
             level="high",
-            rationale="Both structured records and document evidence were retrieved and no conflict was identified.",
+            rationale=(
+                "Both structured records and document evidence were "
+                "retrieved and no conflict was identified."
+            ),
         )
+
     if sql_count or rag_count:
         return ConfidenceAssessment(
             level="moderate",
-            rationale="Relevant evidence was retrieved from one source type without independent corroboration.",
+            rationale=(
+                "Relevant evidence was retrieved from one source type "
+                "without independent corroboration."
+            ),
         )
+
     return ConfidenceAssessment(
         level="low",
         rationale="No relevant evidence was retrieved.",
@@ -158,6 +302,7 @@ def answer_question(question: str) -> AgentResponse:
 
     question = question.strip()
     plan = _plan(question)
+
     evidence = []
     limitations = []
     sql_count = 0
@@ -171,21 +316,37 @@ def answer_question(question: str) -> AgentResponse:
             evidence.extend(sql_items)
             sql_count = len(sql_items)
         except Exception:
-            limitations.append("Structured record retrieval was unavailable.")
+            logger.exception("Structured record retrieval failed.")
+            limitations.append(
+                "Structured record retrieval was unavailable."
+            )
 
     if "rag" in plan.sources:
         try:
-            chunks = retrieve_relevant_chunks(plan.rag_query or question, top_k=5)
+            chunks = retrieve_relevant_chunks(
+                plan.rag_query or question,
+                top_k=5,
+            )
             rag_items = _rag_evidence(chunks)
             evidence.extend(rag_items)
             rag_count = len(rag_items)
         except Exception:
-            limitations.append("Document retrieval was unavailable.")
+            logger.exception("Document retrieval failed.")
+            limitations.append(
+                "Document retrieval was unavailable."
+            )
 
     if not evidence:
         if not limitations:
-            limitations.append("No relevant structured or document evidence was retrieved.")
-        answer = "I cannot determine this from the available company records and documents."
+            limitations.append(
+                "No relevant structured or document evidence was retrieved."
+            )
+
+        answer = (
+            "I cannot determine this from the available company "
+            "records and documents."
+        )
+
         return AgentResponse(
             question=question,
             answer=answer,
@@ -198,19 +359,42 @@ def answer_question(question: str) -> AgentResponse:
     draft = _generate_json(
         ANSWER_PROMPT.format(
             question=question,
-            evidence=json.dumps(evidence, ensure_ascii=False, default=str),
+            evidence=json.dumps(
+                evidence,
+                ensure_ascii=False,
+                default=str,
+            ),
         ),
         AnswerDraft,
     )
-    conflicts = [item.strip() for item in draft.conflicts if item.strip()]
-    limitations.extend(item.strip() for item in draft.limitations if item.strip())
+
+    conflicts = [
+        item.strip()
+        for item in draft.conflicts
+        if item.strip()
+    ]
+
+    limitations.extend(
+        item.strip()
+        for item in draft.limitations
+        if item.strip()
+    )
+
     if conflicts:
-        limitations.append("Conflicting evidence was found; review the cited sources before acting.")
+        limitations.append(
+            "Conflicting evidence was found; review the cited "
+            "sources before acting."
+        )
+
     return AgentResponse(
         question=question,
         answer=draft.answer.strip(),
         retrieval_sources=attempted_sources,
         evidence=evidence,
-        confidence=_confidence(sql_count, rag_count, conflicts),
+        confidence=_confidence(
+            sql_count,
+            rag_count,
+            conflicts,
+        ),
         limitations=list(dict.fromkeys(limitations)),
     )

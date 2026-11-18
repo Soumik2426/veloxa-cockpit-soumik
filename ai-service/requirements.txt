@@ -1,5 +1,6 @@
 # Embedding generation
 google-genai
+groq==1.7.0
 
 # Database connection
 sqlalchemy
