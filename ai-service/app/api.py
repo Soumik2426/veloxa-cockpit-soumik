@@ -1,9 +1,11 @@
 from typing import Literal
 from uuid import UUID
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from app.agent.orchestrator import GeminiServiceError, answer_question
+from app.agent.schemas import AgentAskRequest, AgentResponse
 from app.documents import process_document
 
 
@@ -22,6 +24,19 @@ class DocumentBatch(BaseModel):
 
 
 app = FastAPI(title="Veloxa AI Service")
+
+
+@app.post("/api/v1/agent/ask", response_model=AgentResponse)
+def ask_agent(request: AgentAskRequest):
+    try:
+        return answer_question(request.question)
+    except GeminiServiceError as error:
+        raise HTTPException(
+            status_code=502,
+            detail="The AI agent could not complete the request.",
+        ) from error
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
 
 
 @app.post("/api/v1/documents/process")
