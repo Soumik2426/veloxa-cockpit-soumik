@@ -13,5 +13,5 @@ fastapi
 uvicorn[standard]
 pymupdf
 python-docx
-
+pytest
 

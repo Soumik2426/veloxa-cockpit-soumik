@@ -153,6 +153,7 @@ def _validate_field(field: str, allowed_fields: set[str]) -> None:
         raise ValueError(f"Unsupported structured field: {field}")
 
 
+
 def _validate_filters(filters: list[dict], allowed_fields: set[str]) -> None:
     if not isinstance(filters, list) or len(filters) > 10:
         raise ValueError("Filters must be a list containing at most 10 items.")
@@ -163,16 +164,33 @@ def _validate_filters(filters: list[dict], allowed_fields: set[str]) -> None:
 
         _validate_field(item.get("field"), allowed_fields)
 
-        if item.get("operator") not in {"equals", "contains"}:
-            raise ValueError("Unsupported filter operator.")
-
+        operator = item.get("operator")
         value = item.get("value")
 
-        if not isinstance(value, (str, int, float)):
-            raise ValueError("Filter values must be text or numbers.")
+        if operator == "in":
+            if (
+                not isinstance(value, list)
+                or not value
+                or len(value) > 10
+                or not all(isinstance(v, str) and v.strip() for v in value)
+            ):
+                raise ValueError(
+                    "The 'in' operator requires a non-empty list of up to 10 strings."
+                )
 
-        if len(str(value)) > MAX_TERM_LENGTH:
-            raise ValueError("Filter value is too long.")
+            if any(len(v) > MAX_TERM_LENGTH for v in value):
+                raise ValueError("Filter value is too long.")
+
+        elif operator in {"equals", "contains"}:
+            if not isinstance(value, (str, int, float)):
+                raise ValueError("Filter values must be text or numbers.")
+
+            if len(str(value)) > MAX_TERM_LENGTH:
+                raise ValueError("Filter value is too long.")
+
+        else:
+            raise ValueError("Unsupported filter operator.")
+
 
 
 def _numeric_expression() -> str:
@@ -263,16 +281,23 @@ def execute_structured_query(plan: dict) -> dict:
     for item in filters:
         field_name = item["field"]
         value = item["value"]
+        operator = item["operator"]
 
         expression = "r.extracted_data->'data'->>%s"
         params.append(field_name)
 
-        if item["operator"] == "equals":
+        if operator == "equals":
             where_clauses.append(f"{expression} = %s")
             params.append(str(value))
-        else:
+
+        elif operator == "contains":
             where_clauses.append(f"{expression} ILIKE %s")
             params.append(f"%{value}%")
+
+        elif operator == "in":
+            placeholders = ", ".join(["%s"] * len(value))
+            where_clauses.append(f"{expression} IN ({placeholders})")
+            params.extend(value)
 
     base = """
         FROM extracted_record AS r
