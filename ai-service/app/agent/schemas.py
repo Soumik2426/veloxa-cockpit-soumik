@@ -9,8 +9,22 @@ class AgentAskRequest(BaseModel):
 
 class StructuredQueryFilter(BaseModel):
     field: str = Field(min_length=1, max_length=100)
-    operator: Literal["equals", "contains", "in"]
-    value: str | int | float | list[str]
+    operator: Literal["equals", "contains", "in", "between"]
+    value: str | int | float | list[str] | list[int] | list[float]
+
+    @model_validator(mode="after")
+    def validate_filter_value(self):
+        if self.operator == "between":
+            if not isinstance(self.value, list) or len(self.value) != 2:
+                raise ValueError("The 'between' operator requires exactly two values.")
+            if not all(isinstance(item, (str, int, float)) for item in self.value):
+                raise ValueError("The 'between' values must be text or numbers.")
+        elif self.operator == "in":
+            if not isinstance(self.value, list) or not self.value:
+                raise ValueError("The 'in' operator requires a non-empty list.")
+        elif isinstance(self.value, list):
+            raise ValueError("Only 'in' and 'between' accept list values.")
+        return self
 
 
 class StructuredQueryPlan(BaseModel):

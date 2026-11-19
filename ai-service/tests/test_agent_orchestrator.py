@@ -44,6 +44,29 @@ def rag_chunk():
 
 class AgentOrchestratorTests(unittest.TestCase):
 
+    def setUp(self):
+        self.catalogue_patcher = patch(
+            "app.agent.orchestrator.discover_structured_catalogue",
+            return_value={
+                "Employee_Master.xlsx": {
+                    "Employees": {
+                        "fields": ["Emp ID", "Full Name", "Manager ID"],
+                        "field_details": {},
+                    }
+                },
+                "Jira_Export_ATLAS.xlsx": {
+                    "Issues": {
+                        "fields": ["Key", "Status", "Story Points"],
+                        "field_details": {},
+                    }
+                },
+            },
+        )
+        self.catalogue_patcher.start()
+
+    def tearDown(self):
+        self.catalogue_patcher.stop()
+
     def run_with_plan(self, plan, answer=None):
         generated = [plan]
 
@@ -53,6 +76,22 @@ class AgentOrchestratorTests(unittest.TestCase):
         return patch(
             "app.agent.orchestrator._generate_json",
             side_effect=generated,
+        )
+
+    def test_empty_planner_result_uses_generic_retrieval_fallback(self):
+        from app.agent.orchestrator import _plan
+
+        with patch(
+            "app.agent.orchestrator._generate_json",
+            return_value=RetrievalPlan(sources=[]),
+        ):
+            plan = _plan("Summarise the latest operational risks")
+
+        self.assertEqual(plan.sources, ["sql", "rag"])
+        self.assertTrue(plan.search_terms)
+        self.assertEqual(
+            plan.rag_query,
+            "Summarise the latest operational risks",
         )
 
     def test_sql_only_question_uses_structured_records(self):
@@ -114,7 +153,7 @@ class AgentOrchestratorTests(unittest.TestCase):
         sql.assert_not_called()
         rag.assert_called_once_with(
             "delivery blockers",
-            top_k=5,
+            top_k=10,
         )
 
         self.assertEqual(
@@ -340,3 +379,79 @@ class AgentOrchestratorTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+    def test_planner_normalizes_common_aggregation_aliases_and_null_limits(self):
+        from app.agent.orchestrator import _normalize_retrieval_plan
+
+        normalized = _normalize_retrieval_plan({
+            "sources": ["sql"],
+            "structured_queries": [{
+                "source_file": "Jira_Export_ATLAS.xlsx",
+                "sheet": "Issues",
+                "operation": "group_sum",
+                "numeric_field": "Story Points",
+                "group_field": "Status",
+                "limit": None,
+                "filters": [],
+            }],
+        })
+
+        query = normalized["structured_queries"][0]
+        self.assertEqual(query["field"], "Story Points")
+        self.assertEqual(query["group_by"], "Status")
+        self.assertEqual(query["limit"], 25)
+
+    def test_planner_drops_invalid_query_without_failing_whole_plan(self):
+        from app.agent.orchestrator import _normalize_retrieval_plan
+
+        normalized = _normalize_retrieval_plan({
+            "sources": ["sql", "rag"],
+            "rag_query": "incident details",
+            "structured_queries": [{
+                "source_file": "Incidents_Aug-Oct_2026.xlsx",
+                "sheet": "Incidents",
+                "operation": "group_count",
+                "filters": [],
+            }],
+        })
+
+        self.assertEqual(normalized["structured_queries"], [])
+        self.assertEqual(normalized["sources"], ["sql", "rag"])
+        plan = RetrievalPlan.model_validate(normalized)
+        self.assertEqual(plan.sources, ["sql", "rag"])
+
+    def test_between_filter_is_normalized_and_validated(self):
+        from app.agent.orchestrator import _normalize_retrieval_plan
+
+        normalized = _normalize_retrieval_plan({
+            "sources": ["sql"],
+            "structured_queries": [{
+                "source_file": "GL_Export_Apr-Sep_2026.xlsx",
+                "sheet": "GL Apr-Sep",
+                "operation": "search",
+                "filters": [{
+                    "field": "Txn Date",
+                    "operator": "between",
+                    "value": ["2026-04-01", "2026-09-30"],
+                }],
+            }],
+        })
+
+        plan = RetrievalPlan.model_validate(normalized)
+        self.assertEqual(plan.structured_queries[0].filters[0].operator, "between")
+
+    def test_prompt_evidence_is_bounded(self):
+        from app.agent.orchestrator import _compact_evidence_for_prompt
+
+        evidence = [{
+            "evidence_id": "RAG-1",
+            "source": "rag",
+            "source_reference": {"file_name": "long.docx"},
+            "content": "x" * 12000,
+        }]
+
+        compact, truncated = _compact_evidence_for_prompt(evidence)
+        self.assertTrue(truncated)
+        self.assertLessEqual(len(str(compact)), 4000)
+        self.assertEqual(compact[0]["evidence_id"], "RAG-1")

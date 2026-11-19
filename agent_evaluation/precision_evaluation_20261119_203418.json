@@ -1,0 +1,1010 @@
+﻿[
+    {
+        "TestCase":  "TC-11",
+        "Question":  "How many employees are present in the HR master, and how are they distributed across departments? Provide the total employee count and the count for each department.",
+        "ApiStatus":  "SUCCESS",
+        "Sources":  [
+                        "sql"
+                    ],
+        "Answer":  "There are a total of 19 employees present in the HR master. The distribution of employees across departments is as follows:\n- Engineering: 5\n- Finance: 3\n- Marketing: 3\n- People \u0026 Ops: 3\n- Support: 2\n- Sales: 2\n- Leadership: 1",
+        "Evidence":  [
+                         {
+                             "evidence_id":  "SQL-1",
+                             "source":  "sql",
+                             "source_reference":  {
+                                                      "file_name":  "Employee_Master.xlsx",
+                                                      "sheet":  "Employees",
+                                                      "operation":  "count",
+                                                      "field":  "Emp ID",
+                                                      "group_by":  null,
+                                                      "filters":  [
+
+                                                                  ]
+                                                  },
+                             "content":  {
+                                             "operation":  "count",
+                                             "results":  [
+                                                             {
+                                                                 "total_count":  19
+                                                             }
+                                                         ],
+                                             "truncated":  false
+                                         }
+                         },
+                         {
+                             "evidence_id":  "SQL-2",
+                             "source":  "sql",
+                             "source_reference":  {
+                                                      "file_name":  "Employee_Master.xlsx",
+                                                      "sheet":  "Employees",
+                                                      "operation":  "group_count",
+                                                      "field":  null,
+                                                      "group_by":  "Department",
+                                                      "filters":  [
+
+                                                                  ]
+                                                  },
+                             "content":  {
+                                             "operation":  "group_count",
+                                             "results":  [
+                                                             {
+                                                                 "group_value":  "Engineering",
+                                                                 "total_count":  5
+                                                             },
+                                                             {
+                                                                 "group_value":  "Finance",
+                                                                 "total_count":  3
+                                                             },
+                                                             {
+                                                                 "group_value":  "Marketing",
+                                                                 "total_count":  3
+                                                             },
+                                                             {
+                                                                 "group_value":  "People \u0026 Ops",
+                                                                 "total_count":  3
+                                                             },
+                                                             {
+                                                                 "group_value":  "Support",
+                                                                 "total_count":  2
+                                                             },
+                                                             {
+                                                                 "group_value":  "Sales",
+                                                                 "total_count":  2
+                                                             },
+                                                             {
+                                                                 "group_value":  "Leadership",
+                                                                 "total_count":  1
+                                                             }
+                                                         ],
+                                             "truncated":  false
+                                         }
+                         }
+                     ],
+        "Confidence":  {
+                           "level":  "moderate",
+                           "rationale":  "Supporting evidence was retrieved and citation references were validated, but independent or complete support for every requested fact has not been established."
+                       },
+        "Limitations":  [
+
+                        ],
+        "HttpStatus":  200,
+        "Error":  null
+    },
+    {
+        "TestCase":  "TC-12",
+        "Question":  "Which job requisitions are currently open? For each requisition, provide its requisition ID, job title, opening date, and the number of candidates currently in its pipeline.",
+        "ApiStatus":  "SUCCESS",
+        "Sources":  [
+                        "sql"
+                    ],
+        "Answer":  "There are currently two open job requisitions: Product Marketing Manager (REQ-016) and Support Associate (REQ-017). \n\n* **Product Marketing Manager**\n  * Requisition ID: REQ-016\n  * Opening Date: 2026-09-17\n  * Candidates in Pipeline: 7\n\n* **Support Associate**\n  * Requisition ID: REQ-017\n  * Opening Date: 2026-10-01\n  * Candidates in Pipeline: 2",
+        "Evidence":  [
+                         {
+                             "evidence_id":  "SQL-1",
+                             "source":  "sql",
+                             "source_reference":  {
+                                                      "file_name":  "Hiring_Tracker.xlsx",
+                                                      "sheet":  "Requisitions",
+                                                      "operation":  "search",
+                                                      "field":  null,
+                                                      "group_by":  null,
+                                                      "filters":  [
+                                                                      {
+                                                                          "field":  "Status",
+                                                                          "operator":  "equals",
+                                                                          "value":  "Open"
+                                                                      }
+                                                                  ]
+                                                  },
+                             "content":  {
+                                             "operation":  "search",
+                                             "results":  [
+                                                             {
+                                                                 "id":  "b3e73e92-9e5c-4458-9c92-d6cba589e55c",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Requisitions:8",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  8,
+                                                                                        "sheet_name":  "Requisitions"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "Role":  "Product Marketing Manager",
+                                                                                                     "Team":  "Marketing",
+                                                                                                     "Notes":  "Backfill",
+                                                                                                     "Opened":  "2026-09-17",
+                                                                                                     "Req ID":  "REQ-016",
+                                                                                                     "Status":  "Open",
+                                                                                                     "In pipeline":  7.0,
+                                                                                                     "Status Date":  "2026-09-17",
+                                                                                                     "Hiring Manager":  "VX006"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Hiring_Tracker.xlsx",
+                                                                 "relative_path":  "Day2_Tue_17Nov/data_room/hr/Hiring_Tracker.xlsx"
+                                                             },
+                                                             {
+                                                                 "id":  "ab57b084-ea9e-4559-846f-919145fc632b",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Requisitions:9",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  9,
+                                                                                        "sheet_name":  "Requisitions"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "Role":  "Support Associate",
+                                                                                                     "Team":  "Support",
+                                                                                                     "Notes":  "",
+                                                                                                     "Opened":  "2026-10-01",
+                                                                                                     "Req ID":  "REQ-017",
+                                                                                                     "Status":  "Open",
+                                                                                                     "In pipeline":  2.0,
+                                                                                                     "Status Date":  "2026-10-01",
+                                                                                                     "Hiring Manager":  "VX016"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Hiring_Tracker.xlsx",
+                                                                 "relative_path":  "Day2_Tue_17Nov/data_room/hr/Hiring_Tracker.xlsx"
+                                                             }
+                                                         ],
+                                             "result_count":  2,
+                                             "truncated":  false
+                                         }
+                         }
+                     ],
+        "Confidence":  {
+                           "level":  "moderate",
+                           "rationale":  "Supporting evidence was retrieved and citation references were validated, but independent or complete support for every requested fact has not been established."
+                       },
+        "Limitations":  [
+
+                        ],
+        "HttpStatus":  200,
+        "Error":  null
+    },
+    {
+        "TestCase":  "TC-13",
+        "Question":  "According to the July-September 2026 board update, what are the company\u0027s ARR, total customer count, monthly burn, team size, and runway?",
+        "ApiStatus":  "SUCCESS",
+        "Sources":  [
+                        "rag"
+                    ],
+        "Answer":  "The JulyâSeptemberâ¯2026 board update reports an ARR of Rsâ¯6.1â¯Cr, 66 customers, a monthly burn of Rsâ¯44â¯L, a team of 19 people, and a runway of 13â¯months.",
+        "Evidence":  [
+                         {
+                             "evidence_id":  "RAG-1",
+                             "source":  "rag",
+                             "source_reference":  {
+                                                      "file_name":  "Board_Update_Jul-Sep_2026.pdf",
+                                                      "source_path":  "Day1_Mon_16Nov/data_room/documents/Board_Update_Jul-Sep_2026.pdf",
+                                                      "chunk_id":  "c10d04a0-f48e-489b-9066-a6addd9d65d6",
+                                                      "chunk_index":  null
+                                                  },
+                             "content":  "Board_Update_Jul-Sep_2026.pdf \u003e Page 1 Veloxa Technologies: Board update Quarterly update. Period: Jul to Sep 2026. Sent 6 Oct 2026. Confidential. Key numbers Metric Value ARR (recurring) Rs. 6.1 Cr Customers 66 Team 19 Monthly burn Rs. 44 L Runway 13 months Product Atlas is in final hardening. We moved GA to absorb unplanned reliability work after a difficult August; the engine itself is feature-complete. Team Hiring is paused while we close the round. One planned departure in marketing. Marketing The Logistics Summit drew 212 registrations, our biggest event yet.",
+                             "similarity":  0.8274982586080785
+                         },
+                         {
+                             "evidence_id":  "RAG-2",
+                             "source":  "rag",
+                             "source_reference":  {
+                                                      "file_name":  "Board_Update_Apr-Jun_2026.pdf",
+                                                      "source_path":  "Day1_Mon_16Nov/data_room/documents/Board_Update_Apr-Jun_2026.pdf",
+                                                      "chunk_id":  "5bc10bce-e19f-4b38-9596-f3cf3965d86d",
+                                                      "chunk_index":  null
+                                                  },
+                             "content":  "Board_Update_Apr-Jun_2026.pdf \u003e Page 1 Veloxa Technologies: Board update Quarterly update. Period: Apr to Jun 2026. Sent 8 Jul 2026. Confidential. Key numbers Metric Value ARR (recurring) Rs. 5.8 Cr Customers 61 Team 19 Monthly burn Rs. 46 L Runway 14 months Product Atlas (routing engine v3) is on track for GA on 15 September. Real-time re-routing is the headline feature customers have asked for. Launch materials are in preparation. Team We will add two backend engineers this quarter to de-risk Atlas. Search is underway. Asks Introductions to logistics CXOs for the September summit.",
+                             "similarity":  0.8020836362016472
+                         },
+                         {
+                             "evidence_id":  "RAG-3",
+                             "source":  "rag",
+                             "source_reference":  {
+                                                      "file_name":  "T1_CEO_Kickoff_Call.docx",
+                                                      "source_path":  "Day1_Mon_16Nov/transcripts/T1_CEO_Kickoff_Call.docx",
+                                                      "chunk_id":  "d725d246-a1e5-4c69-a48f-f91ef78bf124",
+                                                      "chunk_index":  null
+                                                  },
+                             "content":  "T1 Â· CEO kickoff call Auto-generated summary by MeetNotes AI. Recording 38 min, audio quality: fair. Speakers: Ananya R., Speaker 2 (unidentified). Summary Ananya wants a single place to ask questions about the company. Company is roughly eighteen people (\"one-eighty, give or take\"). Says ARR is \"around forty-two crore, maybe forty-five now\". Main concern is engineering speed; the routing engine \"version three\" was promised to some customers \"by the festive season\" and she is not sure it will make it. Key points Engineering team uses \"Linear, I think, or they moved back to the Jeera board\". Code is on Git Hub. Wants to understand \"what Vikram\u0027s people are actually doing all day\". Mentions Pria \"basically holds the routing thing together\" and \"the new boy Rahul\". Finance \"is Meera\u0027s world\". Mentions burn is \"around two point two\" (unit not stated). HR runs surveys \"on Cult Amp or something\"; attrition \"feels high but Deepa says it\u0027s normal\". Marketing is \"doing a big summit thing in September\". Thinks marketing spend is \"fine\". Speaker 2 mentions that the board wants \"the number by March\" (not clear which number). Action items (auto-detected) Set up time with leadership (owner: unassigned) Send the hub sport export (owner: Speaker 2) Look into slag channel for engineering updates",
+                             "similarity":  0.6899805176254156
+                         },
+                         {
+                             "evidence_id":  "RAG-4",
+                             "source":  "rag",
+                             "source_reference":  {
+                                                      "file_name":  "T2_CFO_Call.docx",
+                                                      "source_path":  "Day1_Mon_16Nov/transcripts/T2_CFO_Call.docx",
+                                                      "chunk_id":  "48fb1a35-8baf-4e6d-b61a-0aef75c2a0b8",
+                                                      "chunk_index":  null
+                                                  },
+                             "content":  "T2 Â· CFO call Auto-generated summary by MeetNotes AI. Recording 26 min, audio quality: poor (speakerphone). Speakers: Meera I., Ananya R. Summary Meera walked through the financial year. Year runs \"April to March, so we\u0027re in FY twenty-six\" (note: speaker may have said twenty-seven). ARR at the start of the year was \"forty-eight\". Burn has been \"two point two lakhs a month, sometimes two point five\". She plans a hiring freeze \"if the raise slips\". Key points Books moved from Tally to \"Joho books\" \"sometime in Jan, or was it Feb\"; older numbers \"may not match\". Payroll runs on \"Kayka\". Individual salaries \"must never show up in anything Ananya sees, only totals\". Her team: Kartik on planning (\"he\u0027s doing his CFA, so forecasts are a bit late\"), and Fatima Shaikh on accounts and payroll (\"she was out for her wedding, that month was messy\"). Marketing spend: \"Nikhil\u0027s numbers never match mine.\" Mentions \"the two backend roles\" in passing, then the call moves on. Action items (auto-detected) Share the budget vs actuals sheet (owner: Meera) Check the freeze decision with Vicky (owner: unassigned)",
+                             "similarity":  0.6823692661600036
+                         },
+                         {
+                             "evidence_id":  "RAG-5",
+                             "source":  "rag",
+                             "source_reference":  {
+                                                      "file_name":  "T4_Head_of_Marketing_Call.docx",
+                                                      "source_path":  "Day3_Wed_18Nov/transcripts/T4_Head_of_Marketing_Call.docx",
+                                                      "chunk_id":  "0005e88f-3f1e-4344-ab72-a5a7231c57fb",
+                                                      "chunk_index":  null
+                                                  },
+                             "content":  "T4 Â· Head of Marketing call Auto-generated summary by MeetNotes AI. Recording 22 min, audio quality: fair (background noise). Speakers: Nikhil B., Speaker 2. Summary Nikhil calls the September summit \"our best quarter ever for pipeline\". Total marketing spend for the half is \"one point eight\" by his numbers. He thinks finance \"counts things differently\". Paid search is \"going great since Ayesha took over\"; LinkedIn is \"a brand play, you can\u0027t measure it like leads\". Key points Team: Nikhil, Ayesha (performance), and \"Sid\", who writes product content. Sid\u0027s \"v3 launch kit has been ready since July, just waiting on engineering\". Leads tracked in \"Hub Spot\"; ads on Google and \"Linked in campaign manager\". Summit budget \"went a little over, nothing crazy\". Mentions \"Manoj from sales says the summit leads are cold\" and dismisses it. Nikhil says marketing will \"report into the new CRO, I hear\" but has no date. Action items (auto-detected) Send the campaign sheet to finance (owner: Ayesha) Backfill Sid\u0027s role (owner: unassigned)",
+                             "similarity":  0.6690599975628665
+                         },
+                         {
+                             "evidence_id":  "RAG-6",
+                             "source":  "rag",
+                             "source_reference":  {
+                                                      "file_name":  "T5_VP_Engineering_Call.docx",
+                                                      "source_path":  "Day3_Wed_18Nov/transcripts/T5_VP_Engineering_Call.docx",
+                                                      "chunk_id":  "b1612509-d0e9-4d6b-8a66-6d8b826063e3",
+                                                      "chunk_index":  null
+                                                  },
+                             "content":  "T5 Â· VP Engineering call Auto-generated summary by MeetNotes AI. Recording 19 min, audio quality: fair. Speakers: Vikram M., Ananya R. Transcript cuts out for ~4 min at 11:20. Summary Vikram says v3 is \"on track, maybe a couple of weeks of buffer needed\". Board date is \"still September-ish\". Main blocker is \"incidents in August that pulled Snehal off\". He disputes that anyone is overloaded: \"everyone\u0027s busy, that\u0027s startups\". Key points Team: Pria (routing lead), Arjun (frontend, \"remote from Pune now, reviews are slower\"), Snehal on SRE and on-call, Rahul (\"joined Feb, ramping well\"). Mentions \"Sneha\" once later; unclear if same person. Tickets on \"the Jeera board, we tried Linear for a month and went back\". Incidents through \"pager duty\". \"We asked for two backend people and finance froze it.\" [audio gap 11:20 to 15:30] Says \"Pria has been doing late nights but she likes it\". Action items (auto-detected) Share the v3 burndown (owner: Vikram) Postmortems for the August incidents on Con fluence (owner: Snehal)",
+                             "similarity":  0.6631633950330655
+                         },
+                         {
+                             "evidence_id":  "RAG-7",
+                             "source":  "rag",
+                             "source_reference":  {
+                                                      "file_name":  "T3_Head_of_People_Call.docx",
+                                                      "source_path":  "Day2_Tue_17Nov/transcripts/T3_Head_of_People_Call.docx",
+                                                      "chunk_id":  "9ef2a394-5376-409c-aaae-48d657f0ba89",
+                                                      "chunk_index":  null
+                                                  },
+                             "content":  "T3 Â· Head of People call Auto-generated summary by MeetNotes AI. Recording 31 min, audio quality: good. Speakers: Deepa J., Ananya R., Rohan (joined late). Summary Deepa says attrition is \"about twelve, which is normal for Bangalore\" (unclear if this is a percentage, a headcount, or a target). Pulse surveys run quarterly on \"Cult Amp\". Engineering scores \"dipped in the July round\". She wants Ananya to see survey comments directly: \"numbers alone hide everything\". Key points HR team: Deepa, Rohan on hiring, Lakshmi as HRBP (\"she handles exits\"). Rohan says there were \"twenty-two open roles in April\" and \"we lost six of them in August\". Offer acceptance is \"down to fifty-something\". Hiring runs on \"Liver\"; HR records on \"Kekka\". Exit interviews: \"most of them say workload\". Deepa mentions \"Sid from marketing\" has put in his papers. Deepa says there is \"one engineer I\u0027m worried about\" but will not name them on the call. Manager training started \"after Diwali, so November-ish\" (Rohan says \"January\"). Action items (auto-detected) Export the pulse results by team (owner: Deepa) Ananya to decide on comment visibility (owner: Ananya)",
+                             "similarity":  0.6556282337003349
+                         },
+                         {
+                             "evidence_id":  "RAG-8",
+                             "source":  "rag",
+                             "source_reference":  {
+                                                      "file_name":  "T6b_CEO_Voice_Note.docx",
+                                                      "source_path":  "Day3_Wed_18Nov/transcripts/T6b_CEO_Voice_Note.docx",
+                                                      "chunk_id":  "5ae493c0-8783-4765-a0f3-a1fd8929b206",
+                                                      "chunk_index":  null
+                                                  },
+                             "content":  "T6b Â· CEO voice note Auto-transcribed WhatsApp voice notes forwarded by Ananya\u0027s assistant. \"So, marketing will report to the new CRO from next month. Or the month after, still finalising. Make sure the thing doesn\u0027t break when we move people around.\"",
+                             "similarity":  0.6480196718997084
+                         },
+                         {
+                             "evidence_id":  "RAG-9",
+                             "source":  "rag",
+                             "source_reference":  {
+                                                      "file_name":  "README.txt",
+                                                      "source_path":  "Day1_Mon_16Nov/data_room/README.txt",
+                                                      "chunk_id":  "575b93ef-9c53-4aa6-9d5d-253f5c06d59a",
+                                                      "chunk_index":  null
+                                                  },
+                             "content":  "README.txt Veloxa data room. Exported by IT on 31 Oct 2026. hr/ Keka HRMS, leave register, Culture Amp pulse, Keka Hire tracker finance/ Zoho Books general ledger, payroll register engineering/ Jira (ATLAS), git history, PagerDuty, on-call rota documents/ board updates, invoices, letters, launch kit email/ selected email threads (.eml) and a printable copy templates/ worksheets for your own use",
+                             "similarity":  0.6398652025708543
+                         },
+                         {
+                             "evidence_id":  "RAG-10",
+                             "source":  "rag",
+                             "source_reference":  {
+                                                      "file_name":  "08.eml",
+                                                      "source_path":  "Day3_Wed_18Nov/data_room/email/08.eml",
+                                                      "chunk_id":  "555d2baa-3892-4ecc-ab73-330527ead213",
+                                                      "chunk_index":  null
+                                                  },
+                             "content":  "August \u003e Email Body Third SEV1 this month. I\u0027m pausing the Atlas perf tickets to stabilise routing-api. The contractor starts on the rota this week. Sneha",
+                             "similarity":  0.6391669511726514
+                         }
+                     ],
+        "Confidence":  {
+                           "level":  "moderate",
+                           "rationale":  "Supporting evidence was retrieved and citation references were validated, but independent or complete support for every requested fact has not been established."
+                       },
+        "Limitations":  [
+
+                        ],
+        "HttpStatus":  200,
+        "Error":  null
+    },
+    {
+        "TestCase":  "TC-14",
+        "Question":  "How many Jira issues are there in total, and how are they distributed across Done, In Progress, and To Do statuses? Provide the status-wise counts and verify that they add up to the total.",
+        "ApiStatus":  "FAILED",
+        "Sources":  [
+
+                    ],
+        "Answer":  null,
+        "Evidence":  [
+
+                     ],
+        "Confidence":  null,
+        "Limitations":  [
+
+                        ],
+        "HttpStatus":  502,
+        "Error":  "The remote server returned an error: (502) Bad Gateway."
+    },
+    {
+        "TestCase":  "TC-15",
+        "Question":  "Show the number of open story points assigned to each employee. Include the assignee identifiers and their corresponding names, and provide the total open story points across all assignees listed.",
+        "ApiStatus":  "SUCCESS",
+        "Sources":  [
+                        "sql"
+                    ],
+        "Answer":  "The open story points assigned to each employee, along with their identifiers and corresponding names, are as follows:\n\n* **PN (Priya Nair, Emp ID: VX007):** 131.0 story points\n* **AD (Arjun Das, Emp ID: VX009):** 47.0 story points\n* **RV (Rahul Verma, Emp ID: VX018):** 37.0 story points\n* **SK (Sneha Kulkarni, Emp ID: VX012):** 18.0 story points\n\nThe total open story points across all assignees listed is 233.0.",
+        "Evidence":  [
+                         {
+                             "evidence_id":  "SQL-1",
+                             "source":  "sql",
+                             "source_reference":  {
+                                                      "file_name":  "Jira_Export_ATLAS.xlsx",
+                                                      "sheet":  "Issues",
+                                                      "operation":  "group_sum",
+                                                      "field":  "Story Points",
+                                                      "group_by":  "Assignee",
+                                                      "filters":  [
+
+                                                                  ]
+                                                  },
+                             "content":  {
+                                             "operation":  "group_sum",
+                                             "results":  [
+                                                             {
+                                                                 "group_value":  "PN",
+                                                                 "total_sum":  "131.0",
+                                                                 "matched_records":  35,
+                                                                 "numeric_records":  35
+                                                             },
+                                                             {
+                                                                 "group_value":  "AD",
+                                                                 "total_sum":  "47.0",
+                                                                 "matched_records":  12,
+                                                                 "numeric_records":  12
+                                                             },
+                                                             {
+                                                                 "group_value":  "RV",
+                                                                 "total_sum":  "37.0",
+                                                                 "matched_records":  11,
+                                                                 "numeric_records":  11
+                                                             },
+                                                             {
+                                                                 "group_value":  "SK",
+                                                                 "total_sum":  "18.0",
+                                                                 "matched_records":  4,
+                                                                 "numeric_records":  4
+                                                             }
+                                                         ],
+                                             "truncated":  false
+                                         }
+                         },
+                         {
+                             "evidence_id":  "SQL-2",
+                             "source":  "sql",
+                             "source_reference":  {
+                                                      "file_name":  "Jira_Export_ATLAS.xlsx",
+                                                      "sheet":  "Issues",
+                                                      "operation":  "sum",
+                                                      "field":  "Story Points",
+                                                      "group_by":  null,
+                                                      "filters":  [
+
+                                                                  ]
+                                                  },
+                             "content":  {
+                                             "operation":  "sum",
+                                             "results":  [
+                                                             {
+                                                                 "total_sum":  "233.0",
+                                                                 "matched_records":  62,
+                                                                 "numeric_records":  62
+                                                             }
+                                                         ],
+                                             "truncated":  false
+                                         }
+                         },
+                         {
+                             "evidence_id":  "SQL-3",
+                             "source":  "sql",
+                             "source_reference":  {
+                                                      "file_name":  "Employee_Master.xlsx",
+                                                      "sheet":  "Employees",
+                                                      "operation":  "search",
+                                                      "field":  null,
+                                                      "group_by":  null,
+                                                      "filters":  [
+
+                                                                  ]
+                                                  },
+                             "content":  {
+                                             "operation":  "search",
+                                             "results":  [
+                                                             {
+                                                                 "id":  "ea9c7b35-7376-478e-91e9-595cd722c149",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Employees:4",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  4,
+                                                                                        "sheet_name":  "Employees"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "Title":  "CEO",
+                                                                                                     "Emp ID":  "VX001",
+                                                                                                     "Status":  "Active",
+                                                                                                     "Location":  "Bengaluru",
+                                                                                                     "Exit Date":  "",
+                                                                                                     "Full Name":  "Ananya Rao",
+                                                                                                     "Join Date":  "2019-04-01",
+                                                                                                     "Department":  "Leadership",
+                                                                                                     "Manager ID":  "",
+                                                                                                     "Work Email":  "ananya@veloxa.in"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Employee_Master.xlsx",
+                                                                 "relative_path":  "Day1_Mon_16Nov/data_room/hr/Employee_Master.xlsx"
+                                                             },
+                                                             {
+                                                                 "id":  "97f92715-496d-47ef-8acc-b706bc8c9716",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Employees:5",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  5,
+                                                                                        "sheet_name":  "Employees"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "Title":  "Sales Lead",
+                                                                                                     "Emp ID":  "VX002",
+                                                                                                     "Status":  "Active",
+                                                                                                     "Location":  "Bengaluru",
+                                                                                                     "Exit Date":  "",
+                                                                                                     "Full Name":  "Manoj Kumar",
+                                                                                                     "Join Date":  "2020-01-06",
+                                                                                                     "Department":  "Sales",
+                                                                                                     "Manager ID":  "VX001",
+                                                                                                     "Work Email":  "manoj@veloxa.in"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Employee_Master.xlsx",
+                                                                 "relative_path":  "Day1_Mon_16Nov/data_room/hr/Employee_Master.xlsx"
+                                                             },
+                                                             {
+                                                                 "id":  "369ba7a4-86a7-418e-b278-88191e29d162",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Employees:6",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  6,
+                                                                                        "sheet_name":  "Employees"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "Title":  "CFO",
+                                                                                                     "Emp ID":  "VX003",
+                                                                                                     "Status":  "Active",
+                                                                                                     "Location":  "Bengaluru",
+                                                                                                     "Exit Date":  "",
+                                                                                                     "Full Name":  "Meera Iyer",
+                                                                                                     "Join Date":  "2023-06-12",
+                                                                                                     "Department":  "Finance",
+                                                                                                     "Manager ID":  "VX001",
+                                                                                                     "Work Email":  "meera@veloxa.in"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Employee_Master.xlsx",
+                                                                 "relative_path":  "Day1_Mon_16Nov/data_room/hr/Employee_Master.xlsx"
+                                                             },
+                                                             {
+                                                                 "id":  "22b881dc-0410-476e-bf2a-79b2cdad4df2",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Employees:7",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  7,
+                                                                                        "sheet_name":  "Employees"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "Title":  "VP Engineering",
+                                                                                                     "Emp ID":  "VX004",
+                                                                                                     "Status":  "Active",
+                                                                                                     "Location":  "Bengaluru",
+                                                                                                     "Exit Date":  "",
+                                                                                                     "Full Name":  "Vikram Menon",
+                                                                                                     "Join Date":  "2021-02-01",
+                                                                                                     "Department":  "Engineering",
+                                                                                                     "Manager ID":  "VX001",
+                                                                                                     "Work Email":  "vikram@veloxa.in"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Employee_Master.xlsx",
+                                                                 "relative_path":  "Day1_Mon_16Nov/data_room/hr/Employee_Master.xlsx"
+                                                             },
+                                                             {
+                                                                 "id":  "1773c8c7-80ed-424f-a44d-847bfdbe63ba",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Employees:8",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  8,
+                                                                                        "sheet_name":  "Employees"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "Title":  "Head of People \u0026 Ops",
+                                                                                                     "Emp ID":  "VX005",
+                                                                                                     "Status":  "Active",
+                                                                                                     "Location":  "Bengaluru",
+                                                                                                     "Exit Date":  "",
+                                                                                                     "Full Name":  "Deepa Joshi",
+                                                                                                     "Join Date":  "2022-07-04",
+                                                                                                     "Department":  "People \u0026 Ops",
+                                                                                                     "Manager ID":  "VX001",
+                                                                                                     "Work Email":  "deepa@veloxa.in"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Employee_Master.xlsx",
+                                                                 "relative_path":  "Day1_Mon_16Nov/data_room/hr/Employee_Master.xlsx"
+                                                             },
+                                                             {
+                                                                 "id":  "aaef2a7b-6074-4fb5-b0c0-d2116f9a2866",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Employees:9",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  9,
+                                                                                        "sheet_name":  "Employees"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "Title":  "Head of Marketing",
+                                                                                                     "Emp ID":  "VX006",
+                                                                                                     "Status":  "Active",
+                                                                                                     "Location":  "Bengaluru",
+                                                                                                     "Exit Date":  "",
+                                                                                                     "Full Name":  "Nikhil Bose",
+                                                                                                     "Join Date":  "2024-09-02",
+                                                                                                     "Department":  "Marketing",
+                                                                                                     "Manager ID":  "VX001",
+                                                                                                     "Work Email":  "nikhil@veloxa.in"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Employee_Master.xlsx",
+                                                                 "relative_path":  "Day1_Mon_16Nov/data_room/hr/Employee_Master.xlsx"
+                                                             },
+                                                             {
+                                                                 "id":  "ae388f48-585d-4ee5-8dda-201fe98fd720",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Employees:10",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  10,
+                                                                                        "sheet_name":  "Employees"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "Title":  "Staff Engineer",
+                                                                                                     "Emp ID":  "VX007",
+                                                                                                     "Status":  "Active",
+                                                                                                     "Location":  "Bengaluru",
+                                                                                                     "Exit Date":  "",
+                                                                                                     "Full Name":  "Priya Nair",
+                                                                                                     "Join Date":  "2022-03-14",
+                                                                                                     "Department":  "Engineering",
+                                                                                                     "Manager ID":  "VX004",
+                                                                                                     "Work Email":  "priya.n@veloxa.in"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Employee_Master.xlsx",
+                                                                 "relative_path":  "Day1_Mon_16Nov/data_room/hr/Employee_Master.xlsx"
+                                                             },
+                                                             {
+                                                                 "id":  "53cdb122-dbce-4f96-9ca5-95477c9b4eb9",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Employees:11",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  11,
+                                                                                        "sheet_name":  "Employees"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "Title":  "Account Executive",
+                                                                                                     "Emp ID":  "VX008",
+                                                                                                     "Status":  "Active",
+                                                                                                     "Location":  "Hyderabad",
+                                                                                                     "Exit Date":  "",
+                                                                                                     "Full Name":  "Divya Reddy",
+                                                                                                     "Join Date":  "2024-01-15",
+                                                                                                     "Department":  "Sales",
+                                                                                                     "Manager ID":  "VX002",
+                                                                                                     "Work Email":  "divya@veloxa.in"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Employee_Master.xlsx",
+                                                                 "relative_path":  "Day1_Mon_16Nov/data_room/hr/Employee_Master.xlsx"
+                                                             },
+                                                             {
+                                                                 "id":  "3e8c0792-81ed-4a5a-aaa2-68f061f1af81",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Employees:12",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  12,
+                                                                                        "sheet_name":  "Employees"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "Title":  "Senior Frontend Engineer",
+                                                                                                     "Emp ID":  "VX009",
+                                                                                                     "Status":  "Active",
+                                                                                                     "Location":  "Pune (remote)",
+                                                                                                     "Exit Date":  "",
+                                                                                                     "Full Name":  "Arjun Das",
+                                                                                                     "Join Date":  "2023-05-08",
+                                                                                                     "Department":  "Engineering",
+                                                                                                     "Manager ID":  "VX004",
+                                                                                                     "Work Email":  "arjun@veloxa.in"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Employee_Master.xlsx",
+                                                                 "relative_path":  "Day1_Mon_16Nov/data_room/hr/Employee_Master.xlsx"
+                                                             },
+                                                             {
+                                                                 "id":  "bfdd7d72-c2ca-4dbe-a353-5f963e710f83",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Employees:13",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  13,
+                                                                                        "sheet_name":  "Employees"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "Title":  "FP\u0026A Manager",
+                                                                                                     "Emp ID":  "VX010",
+                                                                                                     "Status":  "Active",
+                                                                                                     "Location":  "Bengaluru",
+                                                                                                     "Exit Date":  "",
+                                                                                                     "Full Name":  "Karthik Subramanian",
+                                                                                                     "Join Date":  "2024-10-01",
+                                                                                                     "Department":  "Finance",
+                                                                                                     "Manager ID":  "VX003",
+                                                                                                     "Work Email":  "karthik.s@veloxa.in"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Employee_Master.xlsx",
+                                                                 "relative_path":  "Day1_Mon_16Nov/data_room/hr/Employee_Master.xlsx"
+                                                             },
+                                                             {
+                                                                 "id":  "4c924713-294b-451f-958b-ff3b3effb224",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Employees:14",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  14,
+                                                                                        "sheet_name":  "Employees"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "Title":  "Performance Marketing Manager",
+                                                                                                     "Emp ID":  "VX011",
+                                                                                                     "Status":  "Active",
+                                                                                                     "Location":  "Bengaluru",
+                                                                                                     "Exit Date":  "",
+                                                                                                     "Full Name":  "Aisha Khan",
+                                                                                                     "Join Date":  "2023-08-21",
+                                                                                                     "Department":  "Marketing",
+                                                                                                     "Manager ID":  "VX006",
+                                                                                                     "Work Email":  "aisha@veloxa.in"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Employee_Master.xlsx",
+                                                                 "relative_path":  "Day1_Mon_16Nov/data_room/hr/Employee_Master.xlsx"
+                                                             },
+                                                             {
+                                                                 "id":  "f69cd940-7e47-4917-817e-b3ff0aadef1f",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Employees:15",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  15,
+                                                                                        "sheet_name":  "Employees"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "Title":  "Site Reliability Engineer",
+                                                                                                     "Emp ID":  "VX012",
+                                                                                                     "Status":  "Active",
+                                                                                                     "Location":  "Bengaluru",
+                                                                                                     "Exit Date":  "",
+                                                                                                     "Full Name":  "Sneha Kulkarni",
+                                                                                                     "Join Date":  "2024-11-04",
+                                                                                                     "Department":  "Engineering",
+                                                                                                     "Manager ID":  "VX004",
+                                                                                                     "Work Email":  "sneha.k@veloxa.in"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Employee_Master.xlsx",
+                                                                 "relative_path":  "Day1_Mon_16Nov/data_room/hr/Employee_Master.xlsx"
+                                                             },
+                                                             {
+                                                                 "id":  "e58c4db8-9943-43a5-863b-bedb6d148bf9",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Employees:16",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  16,
+                                                                                        "sheet_name":  "Employees"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "Title":  "Product Marketing Manager",
+                                                                                                     "Emp ID":  "VX013",
+                                                                                                     "Status":  "Notice period",
+                                                                                                     "Location":  "Bengaluru",
+                                                                                                     "Exit Date":  "2026-10-31",
+                                                                                                     "Full Name":  "Siddharth Mehta",
+                                                                                                     "Join Date":  "2025-04-07",
+                                                                                                     "Department":  "Marketing",
+                                                                                                     "Manager ID":  "VX006",
+                                                                                                     "Work Email":  "sid@veloxa.in"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Employee_Master.xlsx",
+                                                                 "relative_path":  "Day1_Mon_16Nov/data_room/hr/Employee_Master.xlsx"
+                                                             },
+                                                             {
+                                                                 "id":  "2d4661aa-1eb9-4e46-a552-600bea611e30",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Employees:17",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  17,
+                                                                                        "sheet_name":  "Employees"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "Title":  "Accounts \u0026 Payroll Executive",
+                                                                                                     "Emp ID":  "VX014",
+                                                                                                     "Status":  "Active",
+                                                                                                     "Location":  "Bengaluru",
+                                                                                                     "Exit Date":  "",
+                                                                                                     "Full Name":  "Fatima Sheikh",
+                                                                                                     "Join Date":  "2025-05-12",
+                                                                                                     "Department":  "Finance",
+                                                                                                     "Manager ID":  "VX003",
+                                                                                                     "Work Email":  "fatima@veloxa.in"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Employee_Master.xlsx",
+                                                                 "relative_path":  "Day1_Mon_16Nov/data_room/hr/Employee_Master.xlsx"
+                                                             },
+                                                             {
+                                                                 "id":  "f2df54e7-2b4e-49e5-818f-8f3e38118ed7",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Employees:18",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  18,
+                                                                                        "sheet_name":  "Employees"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "Title":  "Talent Partner",
+                                                                                                     "Emp ID":  "VX015",
+                                                                                                     "Status":  "Active",
+                                                                                                     "Location":  "Kolkata (remote)",
+                                                                                                     "Exit Date":  "",
+                                                                                                     "Full Name":  "Rohan Banerjee",
+                                                                                                     "Join Date":  "2024-06-03",
+                                                                                                     "Department":  "People \u0026 Ops",
+                                                                                                     "Manager ID":  "VX005",
+                                                                                                     "Work Email":  "rohan@veloxa.in"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Employee_Master.xlsx",
+                                                                 "relative_path":  "Day1_Mon_16Nov/data_room/hr/Employee_Master.xlsx"
+                                                             },
+                                                             {
+                                                                 "id":  "9d3ab69f-d74a-4565-bf6e-8d45b5026ee3",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Employees:19",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  19,
+                                                                                        "sheet_name":  "Employees"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "Title":  "Customer Support Lead",
+                                                                                                     "Emp ID":  "VX016",
+                                                                                                     "Status":  "Active",
+                                                                                                     "Location":  "Bengaluru",
+                                                                                                     "Exit Date":  "",
+                                                                                                     "Full Name":  "Imran Siddiqui",
+                                                                                                     "Join Date":  "2023-02-13",
+                                                                                                     "Department":  "Support",
+                                                                                                     "Manager ID":  "VX001",
+                                                                                                     "Work Email":  "imran@veloxa.in"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Employee_Master.xlsx",
+                                                                 "relative_path":  "Day1_Mon_16Nov/data_room/hr/Employee_Master.xlsx"
+                                                             },
+                                                             {
+                                                                 "id":  "8e2616de-9f1f-4b76-aee0-0c2cc0d0d907",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Employees:20",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  20,
+                                                                                        "sheet_name":  "Employees"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "Title":  "HR \u0026 Office Executive",
+                                                                                                     "Emp ID":  "VX017",
+                                                                                                     "Status":  "Active",
+                                                                                                     "Location":  "Bengaluru",
+                                                                                                     "Exit Date":  "",
+                                                                                                     "Full Name":  "Lakshmi Pillai",
+                                                                                                     "Join Date":  "2025-10-06",
+                                                                                                     "Department":  "People \u0026 Ops",
+                                                                                                     "Manager ID":  "VX005",
+                                                                                                     "Work Email":  "lakshmi.p@veloxa.in"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Employee_Master.xlsx",
+                                                                 "relative_path":  "Day1_Mon_16Nov/data_room/hr/Employee_Master.xlsx"
+                                                             },
+                                                             {
+                                                                 "id":  "24d0263d-5b2c-4468-b6e7-90579a4c0d2e",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Employees:21",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  21,
+                                                                                        "sheet_name":  "Employees"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "Title":  "Backend Engineer",
+                                                                                                     "Emp ID":  "VX018",
+                                                                                                     "Status":  "Active",
+                                                                                                     "Location":  "Bengaluru",
+                                                                                                     "Exit Date":  "",
+                                                                                                     "Full Name":  "Rahul Verma",
+                                                                                                     "Join Date":  "2026-02-03",
+                                                                                                     "Department":  "Engineering",
+                                                                                                     "Manager ID":  "VX004",
+                                                                                                     "Work Email":  "rahul.v@veloxa.in"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Employee_Master.xlsx",
+                                                                 "relative_path":  "Day1_Mon_16Nov/data_room/hr/Employee_Master.xlsx"
+                                                             },
+                                                             {
+                                                                 "id":  "3eb94279-6450-4065-b291-dad6113bbf5f",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Employees:22",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  22,
+                                                                                        "sheet_name":  "Employees"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "Title":  "Support Associate",
+                                                                                                     "Emp ID":  "VX019",
+                                                                                                     "Status":  "Active",
+                                                                                                     "Location":  "Bengaluru",
+                                                                                                     "Exit Date":  "",
+                                                                                                     "Full Name":  "Kavya Narayan",
+                                                                                                     "Join Date":  "2025-07-01",
+                                                                                                     "Department":  "Support",
+                                                                                                     "Manager ID":  "VX016",
+                                                                                                     "Work Email":  "kavya@veloxa.in"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Employee_Master.xlsx",
+                                                                 "relative_path":  "Day1_Mon_16Nov/data_room/hr/Employee_Master.xlsx"
+                                                             }
+                                                         ],
+                                             "result_count":  19,
+                                             "truncated":  false
+                                         }
+                         }
+                     ],
+        "Confidence":  {
+                           "level":  "moderate",
+                           "rationale":  "Supporting evidence was retrieved and citation references were validated, but independent or complete support for every requested fact has not been established."
+                       },
+        "Limitations":  [
+
+                        ],
+        "HttpStatus":  200,
+        "Error":  null
+    },
+    {
+        "TestCase":  "TC-16",
+        "Question":  "Which service has the highest number of incidents between August and October 2026? Provide the incident count for each service, identify the incident IDs associated with the service having the highest count, and state the overall incident total.",
+        "ApiStatus":  "FAILED",
+        "Sources":  [
+
+                    ],
+        "Answer":  null,
+        "Evidence":  [
+
+                     ],
+        "Confidence":  null,
+        "Limitations":  [
+
+                        ],
+        "HttpStatus":  502,
+        "Error":  "The remote server returned an error: (502) Bad Gateway."
+    }
+]

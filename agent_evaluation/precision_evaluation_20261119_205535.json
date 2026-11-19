@@ -1,0 +1,526 @@
+﻿[
+    {
+        "TestCase":  "TC-17",
+        "Question":  "How many incidents occurred in each month from August to October 2026? Provide the monthly incident counts and the overall total.",
+        "ApiStatus":  "SUCCESS",
+        "Sources":  [
+                        "sql"
+                    ],
+        "Answer":  "There were 6 incidents in August 2026, 3 incidents in September 2026, and 2 incidents in October 2026, for a total of 11 incidents. \n- August 2026: 6 incidents (dates: 2026-08-04, 2026-08-07, 2026-08-13, 2026-08-16, 2026-08-22, 2026-08-27)\n- September 2026: 3 incidents (dates: 2026-09-05, 2026-09-19, 2026-09-28)\n- October 2026: 2 incidents (dates: 2026-10-09, 2026-10-21)\n- Overall total: 11 incidents",
+        "Evidence":  [
+                         {
+                             "evidence_id":  "SQL-1",
+                             "source":  "sql",
+                             "source_reference":  {
+                                                      "file_name":  "Incidents_Aug-Oct_2026.xlsx",
+                                                      "sheet":  "Incidents",
+                                                      "operation":  "group_count",
+                                                      "field":  null,
+                                                      "group_by":  "Opened",
+                                                      "filters":  [
+
+                                                                  ]
+                                                  },
+                             "content":  {
+                                             "operation":  "group_count",
+                                             "results":  [
+                                                             {
+                                                                 "group_value":  "2026-08-04T05:12:00Z",
+                                                                 "total_count":  1
+                                                             },
+                                                             {
+                                                                 "group_value":  "2026-08-07T14:30:00Z",
+                                                                 "total_count":  1
+                                                             },
+                                                             {
+                                                                 "group_value":  "2026-08-13T18:55:00Z",
+                                                                 "total_count":  1
+                                                             },
+                                                             {
+                                                                 "group_value":  "2026-08-16T09:00:00Z",
+                                                                 "total_count":  1
+                                                             },
+                                                             {
+                                                                 "group_value":  "2026-08-22T20:41:00Z",
+                                                                 "total_count":  1
+                                                             },
+                                                             {
+                                                                 "group_value":  "2026-08-27T11:03:00Z",
+                                                                 "total_count":  1
+                                                             },
+                                                             {
+                                                                 "group_value":  "2026-09-05T16:10:00Z",
+                                                                 "total_count":  1
+                                                             },
+                                                             {
+                                                                 "group_value":  "2026-09-19T07:45:00Z",
+                                                                 "total_count":  1
+                                                             },
+                                                             {
+                                                                 "group_value":  "2026-09-28T21:30:00Z",
+                                                                 "total_count":  1
+                                                             },
+                                                             {
+                                                                 "group_value":  "2026-10-09T10:00:00Z",
+                                                                 "total_count":  1
+                                                             },
+                                                             {
+                                                                 "group_value":  "2026-10-21T19:20:00Z",
+                                                                 "total_count":  1
+                                                             }
+                                                         ],
+                                             "truncated":  false
+                                         }
+                         },
+                         {
+                             "evidence_id":  "SQL-2",
+                             "source":  "sql",
+                             "source_reference":  {
+                                                      "file_name":  "Incidents_Aug-Oct_2026.xlsx",
+                                                      "sheet":  "Incidents",
+                                                      "operation":  "count",
+                                                      "field":  null,
+                                                      "group_by":  null,
+                                                      "filters":  [
+
+                                                                  ]
+                                                  },
+                             "content":  {
+                                             "operation":  "count",
+                                             "results":  [
+                                                             {
+                                                                 "total_count":  11
+                                                             }
+                                                         ],
+                                             "truncated":  false
+                                         }
+                         }
+                     ],
+        "Confidence":  {
+                           "level":  "moderate",
+                           "rationale":  "Supporting evidence was retrieved and citation references were validated, but independent or complete support for every requested fact has not been established."
+                       },
+        "Limitations":  [
+
+                        ],
+        "HttpStatus":  200,
+        "Error":  null
+    },
+    {
+        "TestCase":  "TC-18",
+        "Question":  "When did the SEV1 incidents occur, and who handled each of them? Include the incident IDs, dates, affected service, and responder.",
+        "ApiStatus":  "SUCCESS",
+        "Sources":  [
+                        "sql"
+                    ],
+        "Answer":  "The SEV1 incidents occurred on August 4, 2026, August 13, 2026, and August 22, 2026, and were all handled by Sneha. Here are the details for each incident:\n\n* **Incident INC-201**: Opened on 2026-08-04T05:12:00Z, affecting the routing-api service, and handled by Sneha.\n* **Incident INC-203**: Opened on 2026-08-13T18:55:00Z, affecting the routing-api service, and handled by Sneha.\n* **Incident INC-205**: Opened on 2026-08-22T20:41:00Z, affecting the routing-api service, and handled by Sneha.",
+        "Evidence":  [
+                         {
+                             "evidence_id":  "SQL-1",
+                             "source":  "sql",
+                             "source_reference":  {
+                                                      "file_name":  "Incidents_Aug-Oct_2026.xlsx",
+                                                      "sheet":  "Incidents",
+                                                      "operation":  "search",
+                                                      "field":  null,
+                                                      "group_by":  null,
+                                                      "filters":  [
+                                                                      {
+                                                                          "field":  "Severity",
+                                                                          "operator":  "equals",
+                                                                          "value":  "SEV1"
+                                                                      }
+                                                                  ]
+                                                  },
+                             "content":  {
+                                             "operation":  "search",
+                                             "results":  [
+                                                             {
+                                                                 "id":  "34653179-002d-49c3-89c3-19d72f58c26e",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Incidents:4",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  4,
+                                                                                        "sheet_name":  "Incidents"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "ID":  "INC-201",
+                                                                                                     "Opened":  "2026-08-04T05:12:00Z",
+                                                                                                     "Service":  "routing-api",
+                                                                                                     "Resolved":  "2026-08-04T08:40:00Z",
+                                                                                                     "Severity":  "SEV1",
+                                                                                                     "Responder":  "Sneha"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Incidents_Aug-Oct_2026.xlsx",
+                                                                 "relative_path":  "Day3_Wed_18Nov/data_room/engineering/Incidents_Aug-Oct_2026.xlsx"
+                                                             },
+                                                             {
+                                                                 "id":  "99b1852b-5854-41c0-af05-d18478dca81e",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Incidents:6",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  6,
+                                                                                        "sheet_name":  "Incidents"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "ID":  "INC-203",
+                                                                                                     "Opened":  "2026-08-13T18:55:00Z",
+                                                                                                     "Service":  "routing-api",
+                                                                                                     "Resolved":  "2026-08-14T01:10:00Z",
+                                                                                                     "Severity":  "SEV1",
+                                                                                                     "Responder":  "Sneha"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Incidents_Aug-Oct_2026.xlsx",
+                                                                 "relative_path":  "Day3_Wed_18Nov/data_room/engineering/Incidents_Aug-Oct_2026.xlsx"
+                                                             },
+                                                             {
+                                                                 "id":  "b14e4508-d7ac-4988-877e-5a501e93f29f",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Incidents:8",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  8,
+                                                                                        "sheet_name":  "Incidents"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "ID":  "INC-205",
+                                                                                                     "Opened":  "2026-08-22T20:41:00Z",
+                                                                                                     "Service":  "routing-api",
+                                                                                                     "Resolved":  "2026-08-23T02:15:00Z",
+                                                                                                     "Severity":  "SEV1",
+                                                                                                     "Responder":  "Sneha"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Incidents_Aug-Oct_2026.xlsx",
+                                                                 "relative_path":  "Day3_Wed_18Nov/data_room/engineering/Incidents_Aug-Oct_2026.xlsx"
+                                                             }
+                                                         ],
+                                             "result_count":  3,
+                                             "truncated":  false
+                                         }
+                         }
+                     ],
+        "Confidence":  {
+                           "level":  "moderate",
+                           "rationale":  "Supporting evidence was retrieved and citation references were validated, but independent or complete support for every requested fact has not been established."
+                       },
+        "Limitations":  [
+
+                        ],
+        "HttpStatus":  200,
+        "Error":  null
+    },
+    {
+        "TestCase":  "TC-19",
+        "Question":  "Which incident lasted the longest, and how long did it run? Provide the incident ID, start timestamp, end timestamp, and total duration.",
+        "ApiStatus":  "FAILED",
+        "Sources":  [
+
+                    ],
+        "Answer":  null,
+        "Evidence":  [
+
+                     ],
+        "Confidence":  null,
+        "Limitations":  [
+
+                        ],
+        "HttpStatus":  502,
+        "Error":  "The remote server returned an error: (502) Bad Gateway."
+    },
+    {
+        "TestCase":  "TC-20",
+        "Question":  "What was the total general ledger spend for each cost centre between April and September 2026? Provide the cost centre-wise amounts and the overall total.",
+        "ApiStatus":  "FAILED",
+        "Sources":  [
+
+                    ],
+        "Answer":  null,
+        "Evidence":  [
+
+                     ],
+        "Confidence":  null,
+        "Limitations":  [
+
+                        ],
+        "HttpStatus":  502,
+        "Error":  "The remote server returned an error: (502) Bad Gateway."
+    },
+    {
+        "TestCase":  "TC-21",
+        "Question":  "How many commits did Priya make in total? Check whether she appears under multiple author email addresses and combine the commits belonging to her across those identities.",
+        "ApiStatus":  "SUCCESS",
+        "Sources":  [
+                        "sql"
+                    ],
+        "Answer":  "It cannot be determined from the available evidence how many total commits Priya made or whether she appears under multiple author email addresses.",
+        "Evidence":  [
+                         {
+                             "evidence_id":  "SQL-1",
+                             "source":  "sql",
+                             "source_reference":  {
+                                                      "file_name":  "git_log.csv",
+                                                      "sheet":  "Records",
+                                                      "operation":  "count",
+                                                      "field":  "sha",
+                                                      "group_by":  null,
+                                                      "filters":  [
+
+                                                                  ]
+                                                  },
+                             "content":  {
+                                             "operation":  "count",
+                                             "results":  [
+                                                             {
+                                                                 "total_count":  0
+                                                             }
+                                                         ],
+                                             "truncated":  false
+                                         }
+                         }
+                     ],
+        "Confidence":  {
+                           "level":  "low",
+                           "rationale":  "One or more retrieval limitations were detected. The answer may not cover all requested information."
+                       },
+        "Limitations":  [
+                            "The available evidence contains no commit records for Priya or any other author [SQL-1]."
+                        ],
+        "HttpStatus":  200,
+        "Error":  null
+    },
+    {
+        "TestCase":  "TC-22",
+        "Question":  "What was the total amount spent on the September summit? Identify the individual vendor transactions, reconcile different spellings of the same vendor, and exclude expenses unrelated to the summit.",
+        "ApiStatus":  "SUCCESS",
+        "Sources":  [
+                        "sql",
+                        "rag"
+                    ],
+        "Answer":  "The total amount spent on the September summit is Rs. 542,800.0, as recorded for the venue and AV. \n\n* **Individual vendor transactions:** 1 matching record was found in the general ledger export for the vendor Sapphire Events Pvt Ltd with an amount of Rs. 542,800.0.\n* **Vendor spelling reconciliation:** Only a single spelling (\"Sapphire Events Pvt Ltd\") appears in the matching transaction data, so no alternate spellings required reconciliation.\n* **Exclusion of unrelated expenses:** The general ledger search filtered specifically by the narration containing \"summit\", successfully isolating the event expenses from other items.",
+        "Evidence":  [
+                         {
+                             "evidence_id":  "SQL-1",
+                             "source":  "sql",
+                             "source_reference":  {
+                                                      "file_name":  "GL_Export_Apr-Sep_2026.xlsx",
+                                                      "sheet":  "GL Apr-Sep",
+                                                      "operation":  "sum",
+                                                      "field":  "Amount (Rs.)",
+                                                      "group_by":  null,
+                                                      "filters":  [
+                                                                      {
+                                                                          "field":  "Narration",
+                                                                          "operator":  "contains",
+                                                                          "value":  "summit"
+                                                                      }
+                                                                  ]
+                                                  },
+                             "content":  {
+                                             "operation":  "sum",
+                                             "results":  [
+                                                             {
+                                                                 "total_sum":  "542800.0",
+                                                                 "matched_records":  1,
+                                                                 "numeric_records":  1
+                                                             }
+                                                         ],
+                                             "truncated":  false
+                                         }
+                         },
+                         {
+                             "evidence_id":  "SQL-2",
+                             "source":  "sql",
+                             "source_reference":  {
+                                                      "file_name":  "GL_Export_Apr-Sep_2026.xlsx",
+                                                      "sheet":  "GL Apr-Sep",
+                                                      "operation":  "search",
+                                                      "field":  null,
+                                                      "group_by":  null,
+                                                      "filters":  [
+                                                                      {
+                                                                          "field":  "Narration",
+                                                                          "operator":  "contains",
+                                                                          "value":  "summit"
+                                                                      }
+                                                                  ]
+                                                  },
+                             "content":  {
+                                             "operation":  "search",
+                                             "results":  [
+                                                             {
+                                                                 "id":  "b9f66b04-4648-40dd-a4a5-050ad40a8411",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "GL Apr-Sep:23",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  23,
+                                                                                        "sheet_name":  "GL Apr-Sep"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "Ref":  "INV-2291",
+                                                                                                     "Voucher":  "JV-0846",
+                                                                                                     "Txn Date":  "2026-08-29",
+                                                                                                     "Narration":  "Summit: venue, AV",
+                                                                                                     "Entered By":  "FS",
+                                                                                                     "Cost Centre":  "MKT-EVT",
+                                                                                                     "Amount (Rs.)":  542800.0,
+                                                                                                     "Vendor / Payee":  "Sapphire Events Pvt Ltd"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "GL_Export_Apr-Sep_2026.xlsx",
+                                                                 "relative_path":  "Day1_Mon_16Nov/data_room/finance/GL_Export_Apr-Sep_2026.xlsx"
+                                                             }
+                                                         ],
+                                             "result_count":  1,
+                                             "truncated":  false
+                                         }
+                         },
+                         {
+                             "evidence_id":  "RAG-1",
+                             "source":  "rag",
+                             "source_reference":  {
+                                                      "file_name":  "Invoice_PIS-114.pdf",
+                                                      "source_path":  "Day3_Wed_18Nov/data_room/documents/Invoice_PIS-114.pdf",
+                                                      "chunk_id":  "66a2b094-610b-4cf7-82c1-99161c996814",
+                                                      "chunk_index":  null
+                                                  },
+                             "content":  "Invoice_PIS-114.pdf \u003e Page 1 PATIL INFRA SERVICES DevOps and reliability contractors. Baner Road, Pune 411045. GSTIN 27ACZPP8812K1Z3 TAX INVOICE Invoice No. PIS-114 Date 01/10/2026 Bill To Veloxa Technologies Pvt Ltd Place of Supply Karnataka (29) Description Amount (Rs.) On-call SRE support, S. Patil, September 2026 (monthly retainer) 1,20,000 IGST @ 18% 21,600 Total 1,41,600 Previous invoice PIS-108 (18 to 31 Aug, pro rata) settled.",
+                             "similarity":  0.6561165900613539
+                         },
+                         {
+                             "evidence_id":  "RAG-2",
+                             "source":  "rag",
+                             "source_reference":  {
+                                                      "file_name":  "T4_Head_of_Marketing_Call.docx",
+                                                      "source_path":  "Day3_Wed_18Nov/transcripts/T4_Head_of_Marketing_Call.docx",
+                                                      "chunk_id":  "0005e88f-3f1e-4344-ab72-a5a7231c57fb",
+                                                      "chunk_index":  null
+                                                  },
+                             "content":  "T4 Â· Head of Marketing call Auto-generated summary by MeetNotes AI. Recording 22 min, audio quality: fair (background noise). Speakers: Nikhil B., Speaker 2. Summary Nikhil calls the September summit \"our best quarter ever for pipeline\". Total marketing spend for the half is \"one point eight\" by his numbers. He thinks finance \"counts things differently\". Paid search is \"going great since Ayesha took over\"; LinkedIn is \"a brand play, you can\u0027t measure it like leads\". Key points Team: Nikhil, Ayesha (performance), and \"Sid\", who writes product content. Sid\u0027s \"v3 launch kit has been ready since July, just waiting on engineering\". Leads tracked in \"Hub Spot\"; ads on Google and \"Linked in campaign manager\". Summit budget \"went a little over, nothing crazy\". Mentions \"Manoj from sales says the summit leads are cold\" and dismisses it. Nikhil says marketing will \"report into the new CRO, I hear\" but has no date. Action items (auto-detected) Send the campaign sheet to finance (owner: Ayesha) Backfill Sid\u0027s role (owner: unassigned)",
+                             "similarity":  0.6553846261387939
+                         },
+                         {
+                             "evidence_id":  "RAG-3",
+                             "source":  "rag",
+                             "source_reference":  {
+                                                      "file_name":  "Board_Update_Jul-Sep_2026.pdf",
+                                                      "source_path":  "Day1_Mon_16Nov/data_room/documents/Board_Update_Jul-Sep_2026.pdf",
+                                                      "chunk_id":  "c10d04a0-f48e-489b-9066-a6addd9d65d6",
+                                                      "chunk_index":  null
+                                                  },
+                             "content":  "Board_Update_Jul-Sep_2026.pdf \u003e Page 1 Veloxa Technologies: Board update Quarterly update. Period: Jul to Sep 2026. Sent 6 Oct 2026. Confidential. Key numbers Metric Value ARR (recurring) Rs. 6.1 Cr Customers 66 Team 19 Monthly burn Rs. 44 L Runway 13 months Product Atlas is in final hardening. We moved GA to absorb unplanned reliability work after a difficult August; the engine itself is feature-complete. Team Hiring is paused while we close the round. One planned departure in marketing. Marketing The Logistics Summit drew 212 registrations, our biggest event yet.",
+                             "similarity":  0.6400192813244668
+                         },
+                         {
+                             "evidence_id":  "RAG-4",
+                             "source":  "rag",
+                             "source_reference":  {
+                                                      "file_name":  "T2_CFO_Call.docx",
+                                                      "source_path":  "Day1_Mon_16Nov/transcripts/T2_CFO_Call.docx",
+                                                      "chunk_id":  "48fb1a35-8baf-4e6d-b61a-0aef75c2a0b8",
+                                                      "chunk_index":  null
+                                                  },
+                             "content":  "T2 Â· CFO call Auto-generated summary by MeetNotes AI. Recording 26 min, audio quality: poor (speakerphone). Speakers: Meera I., Ananya R. Summary Meera walked through the financial year. Year runs \"April to March, so we\u0027re in FY twenty-six\" (note: speaker may have said twenty-seven). ARR at the start of the year was \"forty-eight\". Burn has been \"two point two lakhs a month, sometimes two point five\". She plans a hiring freeze \"if the raise slips\". Key points Books moved from Tally to \"Joho books\" \"sometime in Jan, or was it Feb\"; older numbers \"may not match\". Payroll runs on \"Kayka\". Individual salaries \"must never show up in anything Ananya sees, only totals\". Her team: Kartik on planning (\"he\u0027s doing his CFA, so forecasts are a bit late\"), and Fatima Shaikh on accounts and payroll (\"she was out for her wedding, that month was messy\"). Marketing spend: \"Nikhil\u0027s numbers never match mine.\" Mentions \"the two backend roles\" in passing, then the call moves on. Action items (auto-detected) Share the budget vs actuals sheet (owner: Meera) Check the freeze decision with Vicky (owner: unassigned)",
+                             "similarity":  0.6306720809350088
+                         },
+                         {
+                             "evidence_id":  "RAG-5",
+                             "source":  "rag",
+                             "source_reference":  {
+                                                      "file_name":  "T5_VP_Engineering_Call.docx",
+                                                      "source_path":  "Day3_Wed_18Nov/transcripts/T5_VP_Engineering_Call.docx",
+                                                      "chunk_id":  "b1612509-d0e9-4d6b-8a66-6d8b826063e3",
+                                                      "chunk_index":  null
+                                                  },
+                             "content":  "T5 Â· VP Engineering call Auto-generated summary by MeetNotes AI. Recording 19 min, audio quality: fair. Speakers: Vikram M., Ananya R. Transcript cuts out for ~4 min at 11:20. Summary Vikram says v3 is \"on track, maybe a couple of weeks of buffer needed\". Board date is \"still September-ish\". Main blocker is \"incidents in August that pulled Snehal off\". He disputes that anyone is overloaded: \"everyone\u0027s busy, that\u0027s startups\". Key points Team: Pria (routing lead), Arjun (frontend, \"remote from Pune now, reviews are slower\"), Snehal on SRE and on-call, Rahul (\"joined Feb, ramping well\"). Mentions \"Sneha\" once later; unclear if same person. Tickets on \"the Jeera board, we tried Linear for a month and went back\". Incidents through \"pager duty\". \"We asked for two backend people and finance froze it.\" [audio gap 11:20 to 15:30] Says \"Pria has been doing late nights but she likes it\". Action items (auto-detected) Share the v3 burndown (owner: Vikram) Postmortems for the August incidents on Con fluence (owner: Snehal)",
+                             "similarity":  0.6250290143310522
+                         },
+                         {
+                             "evidence_id":  "RAG-6",
+                             "source":  "rag",
+                             "source_reference":  {
+                                                      "file_name":  "T1_CEO_Kickoff_Call.docx",
+                                                      "source_path":  "Day1_Mon_16Nov/transcripts/T1_CEO_Kickoff_Call.docx",
+                                                      "chunk_id":  "d725d246-a1e5-4c69-a48f-f91ef78bf124",
+                                                      "chunk_index":  null
+                                                  },
+                             "content":  "T1 Â· CEO kickoff call Auto-generated summary by MeetNotes AI. Recording 38 min, audio quality: fair. Speakers: Ananya R., Speaker 2 (unidentified). Summary Ananya wants a single place to ask questions about the company. Company is roughly eighteen people (\"one-eighty, give or take\"). Says ARR is \"around forty-two crore, maybe forty-five now\". Main concern is engineering speed; the routing engine \"version three\" was promised to some customers \"by the festive season\" and she is not sure it will make it. Key points Engineering team uses \"Linear, I think, or they moved back to the Jeera board\". Code is on Git Hub. Wants to understand \"what Vikram\u0027s people are actually doing all day\". Mentions Pria \"basically holds the routing thing together\" and \"the new boy Rahul\". Finance \"is Meera\u0027s world\". Mentions burn is \"around two point two\" (unit not stated). HR runs surveys \"on Cult Amp or something\"; attrition \"feels high but Deepa says it\u0027s normal\". Marketing is \"doing a big summit thing in September\". Thinks marketing spend is \"fine\". Speaker 2 mentions that the board wants \"the number by March\" (not clear which number). Action items (auto-detected) Set up time with leadership (owner: unassigned) Send the hub sport export (owner: Speaker 2) Look into slag channel for engineering updates",
+                             "similarity":  0.6096446136099385
+                         },
+                         {
+                             "evidence_id":  "RAG-7",
+                             "source":  "rag",
+                             "source_reference":  {
+                                                      "file_name":  "01.eml",
+                                                      "source_path":  "Day1_Mon_16Nov/data_room/email/01.eml",
+                                                      "chunk_id":  "c6b0117f-3e14-43f9-81c6-b66c3887a6bd",
+                                                      "chunk_index":  null
+                                                  },
+                             "content":  "Feb payroll done \u003e Email Body Meera, Ran Feb payroll since Fatima is out. Used the Jan sheet and added the new joiner. Totals attached in the register. Karthik",
+                             "similarity":  0.6069999496772902
+                         },
+                         {
+                             "evidence_id":  "RAG-8",
+                             "source":  "rag",
+                             "source_reference":  {
+                                                      "file_name":  "Board_Update_Apr-Jun_2026.pdf",
+                                                      "source_path":  "Day1_Mon_16Nov/data_room/documents/Board_Update_Apr-Jun_2026.pdf",
+                                                      "chunk_id":  "5bc10bce-e19f-4b38-9596-f3cf3965d86d",
+                                                      "chunk_index":  null
+                                                  },
+                             "content":  "Board_Update_Apr-Jun_2026.pdf \u003e Page 1 Veloxa Technologies: Board update Quarterly update. Period: Apr to Jun 2026. Sent 8 Jul 2026. Confidential. Key numbers Metric Value ARR (recurring) Rs. 5.8 Cr Customers 61 Team 19 Monthly burn Rs. 46 L Runway 14 months Product Atlas (routing engine v3) is on track for GA on 15 September. Real-time re-routing is the headline feature customers have asked for. Launch materials are in preparation. Team We will add two backend engineers this quarter to de-risk Atlas. Search is underway. Asks Introductions to logistics CXOs for the September summit.",
+                             "similarity":  0.6059126234705735
+                         },
+                         {
+                             "evidence_id":  "RAG-9",
+                             "source":  "rag",
+                             "source_reference":  {
+                                                      "file_name":  "08.eml",
+                                                      "source_path":  "Day3_Wed_18Nov/data_room/email/08.eml",
+                                                      "chunk_id":  "555d2baa-3892-4ecc-ab73-330527ead213",
+                                                      "chunk_index":  null
+                                                  },
+                             "content":  "August \u003e Email Body Third SEV1 this month. I\u0027m pausing the Atlas perf tickets to stabilise routing-api. The contractor starts on the rota this week. Sneha",
+                             "similarity":  0.6040956599860479
+                         },
+                         {
+                             "evidence_id":  "RAG-10",
+                             "source":  "rag",
+                             "source_reference":  {
+                                                      "file_name":  "Email_Printouts.pdf",
+                                                      "source_path":  "Day3_Wed_18Nov/data_room/email/Email_Printouts.pdf",
+                                                      "chunk_id":  "1cfd32ac-faab-4be0-acfa-23ecb3f4874c",
+                                                      "chunk_index":  null
+                                                  },
+                             "content":  "Email_Printouts.pdf \u003e Page 1 Email export Selected threads. Times in IST. 01. Feb payroll done From: Karthik Subramanian \u003ckarthik.s@veloxa.in\u003e To: Meera Iyer \u003cmeera@veloxa.in\u003e Date: Sat, 28 Feb 2026 20:15 Meera, Ran Feb payroll since Fatima is out. Used the Jan sheet and added the new joiner. Totals attached in the register. Karthik 02. payslip query From: Rahul Verma \u003crahul.v@veloxa.in\u003e To: Fatima Sheikh \u003cfatima@veloxa.in\u003e Date: Fri, 06 Mar 2026 11:02 Hi Fatima, small query on my first payslip. The amount looks higher than what I expected for a partial month. Is that right? Rahul 03. Re: payslip query From: Fatima Sheikh \u003cfatima@veloxa.in\u003e To: Rahul Verma \u003crahul.v@veloxa.in\u003e Date: Tue, 10 Mar 2026 15:40 Will check and get back. Fatima 04. Atlas plan From: Vikram Menon \u003cvikram@veloxa.in\u003e To: Ananya Rao \u003cananya@veloxa.in\u003e Date: Tue, 02 Jun 2026 09:30 Ananya, Atlas plan: Priya leads the core engine and re-routing, Rahul on the API, Arjun on the UI, Sneha on hardening. 15 Sep GA is achievable if the two backend hires land by July. Vikram 05. Atlas launch kit ready From: Siddharth Mehta \u003csid@veloxa.in\u003e To: Nikhil Bose \u003cnikhil@veloxa.in\u003e Cc: Vikram Menon \u003cvikram@veloxa.in\u003e Date: Wed, 22 Jul 2026 18:05 Launch kit is done (deck, page, emails). Just need a date from engineering. 06. Pausing two reqs From: Meera Iyer \u003cmeera@veloxa.in\u003e To: Vikram Menon \u003cvikram@veloxa.in\u003e Cc: Ananya Rao \u003cananya@veloxa.in\u003e, Rohan Banerjee \u003crohan@veloxa.in\u003e",
+                             "similarity":  0.603900599037316
+                         }
+                     ],
+        "Confidence":  {
+                           "level":  "high",
+                           "rationale":  "Both structured and document evidence were retrieved without reported retrieval limitations. Citation references were validated."
+                       },
+        "Limitations":  [
+
+                        ],
+        "HttpStatus":  200,
+        "Error":  null
+    }
+]

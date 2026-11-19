@@ -1,4 +1,5 @@
 import unittest
+import app.agent.sql_tool as sql_tool
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
@@ -35,6 +36,33 @@ class TestSQLTool(unittest.TestCase):
         self.cursor = FakeCursor()
         self.connection = Mock()
         self.connection.cursor.return_value = self.cursor
+
+        # Structured query tests use a deterministic discovered catalogue.
+        # Production code still discovers this metadata from PostgreSQL.
+        catalogue = {}
+        for source_file, source_schema in SOURCE_SCHEMAS.items():
+            sheet_schemas = source_schema.get("sheets")
+            if sheet_schemas:
+                for sheet_name, sheet_schema in sheet_schemas.items():
+                    catalogue.setdefault(source_file, {})[sheet_name] = {
+                        "fields": sorted(sheet_schema["fields"]),
+                        "field_details": {},
+                    }
+            else:
+                sheet_name = source_schema["sheet"]
+                catalogue.setdefault(source_file, {})[sheet_name] = {
+                    "fields": sorted(source_schema["fields"]),
+                    "field_details": {},
+                }
+
+        self.catalogue_patcher = patch(
+            "app.agent.sql_tool.discover_structured_catalogue",
+            return_value=catalogue,
+        )
+        self.catalogue_patcher.start()
+
+    def tearDown(self):
+        self.catalogue_patcher.stop()
 
     # ---------------------------------------------------------
     # Read-only database execution
@@ -395,3 +423,27 @@ class TestSQLTool(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+    def test_between_filter_generates_parameterized_range(self):
+        with patch(
+            "app.agent.sql_tool._execute_query",
+            return_value=[{"id": "record-id"}],
+        ) as execute:
+            result = execute_structured_query({
+                "source_file": "GL_Export_Apr-Sep_2026.xlsx",
+                "sheet": "GL",
+                "operation": "search",
+                "filters": [{
+                    "field": "Txn Date",
+                    "operator": "between",
+                    "value": ["2026-04-01", "2026-09-30"],
+                }],
+                "limit": 10,
+            })
+
+        self.assertEqual(result["result_count"], 1)
+        query, params = execute.call_args.args
+        self.assertIn("BETWEEN %s AND %s", query)
+        self.assertIn("2026-04-01", params)
+        self.assertIn("2026-09-30", params)

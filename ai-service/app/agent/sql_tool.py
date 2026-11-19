@@ -126,24 +126,90 @@ def _json_safe(value: Any) -> Any:
     return value
 
 
+def discover_structured_catalogue() -> dict[str, dict[str, dict]]:
+    """
+    Discover source files, logical sheets and fields from successfully
+    extracted records. The catalogue contains metadata only, not row values.
+    """
+    sql = """
+        SELECT
+            f.file_name,
+            CASE
+                WHEN split_part(r.record_key, ':', 1) IN ('ROW', 'CSV_ROW')
+                    THEN 'Records'
+                ELSE split_part(r.record_key, ':', 1)
+            END AS sheet_name,
+            field_entry.key AS field_name,
+            COALESCE(
+                string_agg(
+                    DISTINCT jsonb_typeof(field_entry.value),
+                    ', ' ORDER BY jsonb_typeof(field_entry.value)
+                ),
+                'unknown'
+            ) AS observed_types,
+            COUNT(*) AS observed_records
+        FROM extracted_record AS r
+        JOIN ingestion_file AS f ON f.id = r.ingestion_file_id
+        CROSS JOIN LATERAL jsonb_each(
+            CASE
+                WHEN jsonb_typeof(r.extracted_data->'data') = 'object'
+                    THEN r.extracted_data->'data'
+                ELSE '{}'::jsonb
+            END
+        ) AS field_entry(key, value)
+        WHERE r.extraction_status = 'SUCCESS'
+        GROUP BY f.file_name, sheet_name, field_entry.key
+        ORDER BY f.file_name, sheet_name, field_entry.key
+    """
+    rows = _execute_query(sql, ())
+    catalogue: dict[str, dict[str, dict]] = {}
+
+    for row in rows:
+        source_file = row.get("file_name")
+        sheet_name = row.get("sheet_name")
+        field_name = row.get("field_name")
+        if not all(
+            isinstance(value, str) and value.strip()
+            for value in (source_file, sheet_name, field_name)
+        ):
+            continue
+
+        sheet = catalogue.setdefault(source_file, {}).setdefault(
+            sheet_name, {"fields": [], "field_details": {}}
+        )
+        if field_name not in sheet["fields"]:
+            sheet["fields"].append(field_name)
+        sheet["field_details"][field_name] = {
+            "observed_types": row.get("observed_types") or "unknown",
+            "observed_records": int(row.get("observed_records") or 0),
+        }
+
+    return catalogue
+
+
 def _validate_source(source_file: str, sheet: str) -> set[str]:
-    schema = SOURCE_SCHEMAS.get(source_file)
+    if not isinstance(source_file, str) or not source_file.strip():
+        raise ValueError("A structured source file is required.")
+    if not isinstance(sheet, str) or not sheet.strip():
+        raise ValueError("A structured sheet is required.")
 
-    if not schema:
-        raise ValueError("Unsupported structured source file.")
+    catalogue = discover_structured_catalogue()
+    source_schema = catalogue.get(source_file)
+    if not source_schema:
+        raise ValueError(
+            f"Unknown structured source: {source_file}. "
+            "The source must first be ingested successfully."
+        )
 
-    if "sheets" in schema:
-        sheet_schema = schema["sheets"].get(sheet)
+    sheet_schema = source_schema.get(sheet)
+    if not sheet_schema:
+        available = ", ".join(sorted(source_schema))
+        raise ValueError(
+            f"Unknown sheet '{sheet}' for {source_file}. "
+            f"Available sheets: {available or 'none'}."
+        )
 
-        if not sheet_schema:
-            raise ValueError("Unsupported sheet for the selected source file.")
-    else:
-        if schema["sheet"] != sheet:
-            raise ValueError("Unsupported sheet for the selected source file.")
-
-        sheet_schema = schema
-
-    return sheet_schema["fields"]
+    return set(sheet_schema["fields"])
 
 
 def _validate_field(field: str, allowed_fields: set[str]) -> None:
@@ -185,10 +251,19 @@ def _validate_filters(
             if any(len(v) > MAX_TERM_LENGTH for v in value):
                 raise ValueError("Filter value is too long.")
 
+        elif operator == "between":
+            if (
+                not isinstance(value, list)
+                or len(value) != 2
+                or not all(isinstance(v, (str, int, float)) for v in value)
+            ):
+                raise ValueError("The 'between' operator requires exactly two text or numeric values.")
+            if any(len(str(v)) > MAX_TERM_LENGTH for v in value):
+                raise ValueError("Filter value is too long.")
+
         elif operator in {"equals", "contains"}:
             if not isinstance(value, (str, int, float)):
                 raise ValueError("Filter values must be text or numbers.")
-
             if len(str(value)) > MAX_TERM_LENGTH:
                 raise ValueError("Filter value is too long.")
 
@@ -259,25 +334,40 @@ def execute_structured_query(plan: dict) -> dict:
     if operation not in ALLOWED_OPERATIONS:
         raise ValueError("Unsupported structured query operation.")
 
-    allowed_fields = _validate_source(source_file, sheet)
+    # Reject malformed plans before performing catalogue/database access.
+    if operation == "search":
+        limit = plan.get("limit", MAX_RESULTS)
+        if not isinstance(limit, int) or isinstance(limit, bool) or not 1 <= limit <= MAX_RESULTS:
+            raise ValueError(
+                f"Search limit must be between 1 and {MAX_RESULTS}."
+            )
+    else:
+        limit = None
 
     filters = plan.get("filters", [])
-    _validate_filters(filters, allowed_fields)
+    if not isinstance(filters, list) or len(filters) > 10:
+        raise ValueError("Filters must be a list containing at most 10 items.")
 
     field = plan.get("field")
     group_by = plan.get("group_by")
+
+    if operation in {"sum", "group_sum"} and not field:
+        raise ValueError("A field is required for sum operations.")
+
+    if operation in {"group_count", "group_sum"} and not group_by:
+        raise ValueError("A grouping field is required for grouped operations.")
+
+    if operation == "group_sum" and field == group_by:
+        raise ValueError("The grouping and aggregation fields must differ.")
+
+    allowed_fields = _validate_source(source_file, sheet)
+    _validate_filters(filters, allowed_fields)
 
     if operation in {"sum", "group_sum"}:
         _validate_field(field, allowed_fields)
 
     if operation in {"group_count", "group_sum"}:
         _validate_field(group_by, allowed_fields)
-
-    if operation == "sum" and field is None:
-        raise ValueError("A field is required for sum operations.")
-
-    if operation == "group_sum" and field == group_by:
-        raise ValueError("The grouping and aggregation fields must differ.")
 
     params = [source_file, f"{sheet}:%"]
 
@@ -310,6 +400,10 @@ def execute_structured_query(plan: dict) -> dict:
             )
             params.extend(value)
 
+        elif operator == "between":
+            where_clauses.append(f"{expression} BETWEEN %s AND %s")
+            params.extend([str(value[0]), str(value[1])])
+
     base = """
         FROM extracted_record AS r
         JOIN ingestion_file AS f ON f.id = r.ingestion_file_id
@@ -319,13 +413,6 @@ def execute_structured_query(plan: dict) -> dict:
     where_sql = " AND ".join(where_clauses)
 
     if operation == "search":
-        limit = plan.get("limit", MAX_RESULTS)
-
-        if not isinstance(limit, int) or not 1 <= limit <= MAX_RESULTS:
-            raise ValueError(
-                f"Search limit must be between 1 and {MAX_RESULTS}."
-            )
-
         sql = f"""
             SELECT r.id, r.record_type, r.record_key,
                    r.source_locator, r.extracted_data,

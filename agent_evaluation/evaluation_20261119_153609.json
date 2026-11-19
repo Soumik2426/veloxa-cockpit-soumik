@@ -1,0 +1,711 @@
+﻿[
+    {
+        "TestCase":  "TC-01",
+        "Question":  "How many employees are there in the employee master, and what is the department-wise employee count?",
+        "ApiStatus":  "SUCCESS",
+        "Sources":  [
+                        "sql"
+                    ],
+        "Answer":  "There are a total of 19 employees in the employee master. The department-wise employee count is as follows:\n- Engineering: 5\n- Finance: 3\n- Marketing: 3\n- People \u0026 Ops: 3\n- Support: 2\n- Sales: 2\n- Leadership: 1",
+        "Evidence":  [
+                         {
+                             "evidence_id":  "SQL-1",
+                             "source":  "sql",
+                             "source_reference":  {
+                                                      "file_name":  "Employee_Master.xlsx",
+                                                      "sheet":  "Employees",
+                                                      "operation":  "count",
+                                                      "field":  null,
+                                                      "group_by":  null,
+                                                      "filters":  [
+
+                                                                  ]
+                                                  },
+                             "content":  {
+                                             "operation":  "count",
+                                             "results":  [
+                                                             {
+                                                                 "total_count":  19
+                                                             }
+                                                         ],
+                                             "truncated":  false
+                                         }
+                         },
+                         {
+                             "evidence_id":  "SQL-2",
+                             "source":  "sql",
+                             "source_reference":  {
+                                                      "file_name":  "Employee_Master.xlsx",
+                                                      "sheet":  "Employees",
+                                                      "operation":  "group_count",
+                                                      "field":  null,
+                                                      "group_by":  "Department",
+                                                      "filters":  [
+
+                                                                  ]
+                                                  },
+                             "content":  {
+                                             "operation":  "group_count",
+                                             "results":  [
+                                                             {
+                                                                 "group_value":  "Engineering",
+                                                                 "total_count":  5
+                                                             },
+                                                             {
+                                                                 "group_value":  "Finance",
+                                                                 "total_count":  3
+                                                             },
+                                                             {
+                                                                 "group_value":  "Marketing",
+                                                                 "total_count":  3
+                                                             },
+                                                             {
+                                                                 "group_value":  "People \u0026 Ops",
+                                                                 "total_count":  3
+                                                             },
+                                                             {
+                                                                 "group_value":  "Support",
+                                                                 "total_count":  2
+                                                             },
+                                                             {
+                                                                 "group_value":  "Sales",
+                                                                 "total_count":  2
+                                                             },
+                                                             {
+                                                                 "group_value":  "Leadership",
+                                                                 "total_count":  1
+                                                             }
+                                                         ],
+                                             "truncated":  false
+                                         }
+                         }
+                     ],
+        "Confidence":  {
+                           "level":  "moderate",
+                           "rationale":  "Supporting evidence was retrieved and citation references were validated, but independent or complete support for every requested fact has not been established."
+                       },
+        "Limitations":  [
+
+                        ],
+        "HttpStatus":  200,
+        "Error":  null
+    },
+    {
+        "TestCase":  "TC-02",
+        "Question":  "What is Siddharth Mehta\u0027s last working day, and is there any additional information about his resignation?",
+        "ApiStatus":  "SUCCESS",
+        "Sources":  [
+
+                    ],
+        "Answer":  "I cannot determine the answer from the available structured records and documents.",
+        "Evidence":  [
+
+                     ],
+        "Confidence":  {
+                           "level":  "low",
+                           "rationale":  "No usable supporting evidence was retrieved from the available data sources."
+                       },
+        "Limitations":  [
+                            "No supporting evidence was found."
+                        ],
+        "HttpStatus":  200,
+        "Error":  null
+    },
+    {
+        "TestCase":  "TC-03",
+        "Question":  "Who does Rahul Verma report to, and when did he join the company?",
+        "ApiStatus":  "SUCCESS",
+        "Sources":  [
+                        "sql"
+                    ],
+        "Answer":  "Rahul Verma reports to Vikram Menon (Manager ID: VX004), and he joined the company on February 3, 2026.",
+        "Evidence":  [
+                         {
+                             "evidence_id":  "SQL-1",
+                             "source":  "sql",
+                             "source_reference":  {
+                                                      "file_name":  "Employee_Master.xlsx",
+                                                      "sheet":  "Employees",
+                                                      "operation":  "search",
+                                                      "field":  null,
+                                                      "group_by":  null,
+                                                      "filters":  [
+                                                                      {
+                                                                          "field":  "Full Name",
+                                                                          "operator":  "equals",
+                                                                          "value":  "Rahul Verma"
+                                                                      }
+                                                                  ]
+                                                  },
+                             "content":  {
+                                             "operation":  "search",
+                                             "results":  [
+                                                             {
+                                                                 "id":  "24d0263d-5b2c-4468-b6e7-90579a4c0d2e",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Employees:21",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  21,
+                                                                                        "sheet_name":  "Employees"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "Title":  "Backend Engineer",
+                                                                                                     "Emp ID":  "VX018",
+                                                                                                     "Status":  "Active",
+                                                                                                     "Location":  "Bengaluru",
+                                                                                                     "Exit Date":  "",
+                                                                                                     "Full Name":  "Rahul Verma",
+                                                                                                     "Join Date":  "2026-02-03",
+                                                                                                     "Department":  "Engineering",
+                                                                                                     "Manager ID":  "VX004",
+                                                                                                     "Work Email":  "rahul.v@veloxa.in"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Employee_Master.xlsx",
+                                                                 "relative_path":  "Day1_Mon_16Nov/data_room/hr/Employee_Master.xlsx"
+                                                             }
+                                                         ],
+                                             "result_count":  1,
+                                             "truncated":  false
+                                         }
+                         },
+                         {
+                             "evidence_id":  "SQL-2",
+                             "source":  "sql",
+                             "source_reference":  {
+                                                      "file_name":  "Employee_Master.xlsx",
+                                                      "sheet":  "Employees",
+                                                      "operation":  "search",
+                                                      "field":  null,
+                                                      "group_by":  null,
+                                                      "filters":  [
+                                                                      {
+                                                                          "field":  "Emp ID",
+                                                                          "operator":  "equals",
+                                                                          "value":  "VX004"
+                                                                      }
+                                                                  ]
+                                                  },
+                             "content":  {
+                                             "operation":  "search",
+                                             "results":  [
+                                                             {
+                                                                 "id":  "22b881dc-0410-476e-bf2a-79b2cdad4df2",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Employees:7",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  7,
+                                                                                        "sheet_name":  "Employees"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "Title":  "VP Engineering",
+                                                                                                     "Emp ID":  "VX004",
+                                                                                                     "Status":  "Active",
+                                                                                                     "Location":  "Bengaluru",
+                                                                                                     "Exit Date":  "",
+                                                                                                     "Full Name":  "Vikram Menon",
+                                                                                                     "Join Date":  "2021-02-01",
+                                                                                                     "Department":  "Engineering",
+                                                                                                     "Manager ID":  "VX001",
+                                                                                                     "Work Email":  "vikram@veloxa.in"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Employee_Master.xlsx",
+                                                                 "relative_path":  "Day1_Mon_16Nov/data_room/hr/Employee_Master.xlsx"
+                                                             }
+                                                         ],
+                                             "result_count":  1,
+                                             "truncated":  false
+                                         }
+                         }
+                     ],
+        "Confidence":  {
+                           "level":  "high",
+                           "rationale":  "The employee record and the referenced manager record were both retrieved successfully. The answer citations were validated, with no reported conflicts or limitations."
+                       },
+        "Limitations":  [
+
+                        ],
+        "HttpStatus":  200,
+        "Error":  null
+    },
+    {
+        "TestCase":  "TC-04",
+        "Question":  "Where are Divya Reddy, Arjun Das, and Rohan Banerjee based, and what are their work arrangements?",
+        "ApiStatus":  "SUCCESS",
+        "Sources":  [
+
+                    ],
+        "Answer":  "I cannot determine the answer from the available structured records and documents.",
+        "Evidence":  [
+
+                     ],
+        "Confidence":  {
+                           "level":  "low",
+                           "rationale":  "No usable supporting evidence was retrieved from the available data sources."
+                       },
+        "Limitations":  [
+                            "No supporting evidence was found."
+                        ],
+        "HttpStatus":  200,
+        "Error":  null
+    },
+    {
+        "TestCase":  "TC-05",
+        "Question":  "Which requisitions have been on hold since 12 August, and what is the candidate pipeline for them?",
+        "ApiStatus":  "SUCCESS",
+        "Sources":  [
+                        "sql"
+                    ],
+        "Answer":  "The requisitions that have been on hold since 12 August 2026 are:\n1. Role: Backend Engineer (Routing) (Req ID: REQ-014), Team: Engineering, Hiring Manager ID: VX004, with a candidate pipeline of 3.0.\n2. Role: Backend Engineer (Platform) (Req ID: REQ-015), Team: Engineering, Hiring Manager ID: VX004, with a candidate pipeline of 5.0.\n(Note: The hiring manager name for ID VX004 cannot be resolved as no corresponding employee name evidence was provided.)",
+        "Evidence":  [
+                         {
+                             "evidence_id":  "SQL-1",
+                             "source":  "sql",
+                             "source_reference":  {
+                                                      "file_name":  "Hiring_Tracker.xlsx",
+                                                      "sheet":  "Requisitions",
+                                                      "operation":  "search",
+                                                      "field":  null,
+                                                      "group_by":  null,
+                                                      "filters":  [
+                                                                      {
+                                                                          "field":  "Status",
+                                                                          "operator":  "equals",
+                                                                          "value":  "On hold"
+                                                                      },
+                                                                      {
+                                                                          "field":  "Status Date",
+                                                                          "operator":  "equals",
+                                                                          "value":  "2026-08-12"
+                                                                      }
+                                                                  ]
+                                                  },
+                             "content":  {
+                                             "operation":  "search",
+                                             "results":  [
+                                                             {
+                                                                 "id":  "b1c4a8a1-6dc8-4a98-9f20-5b0d234d9c3b",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Requisitions:6",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  6,
+                                                                                        "sheet_name":  "Requisitions"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "Role":  "Backend Engineer (Routing)",
+                                                                                                     "Team":  "Engineering",
+                                                                                                     "Notes":  "Final round 14-Aug cancelled",
+                                                                                                     "Opened":  "2026-05-18",
+                                                                                                     "Req ID":  "REQ-014",
+                                                                                                     "Status":  "On hold",
+                                                                                                     "In pipeline":  3.0,
+                                                                                                     "Status Date":  "2026-08-12",
+                                                                                                     "Hiring Manager":  "VX004"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Hiring_Tracker.xlsx",
+                                                                 "relative_path":  "Day2_Tue_17Nov/data_room/hr/Hiring_Tracker.xlsx"
+                                                             },
+                                                             {
+                                                                 "id":  "04a76aa8-97a8-4580-9c5e-cb3a859b31f0",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Requisitions:7",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  3,
+                                                                                        "row_number":  7,
+                                                                                        "sheet_name":  "Requisitions"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "Role":  "Backend Engineer (Platform)",
+                                                                                                     "Team":  "Engineering",
+                                                                                                     "Notes":  "",
+                                                                                                     "Opened":  "2026-05-18",
+                                                                                                     "Req ID":  "REQ-015",
+                                                                                                     "Status":  "On hold",
+                                                                                                     "In pipeline":  5.0,
+                                                                                                     "Status Date":  "2026-08-12",
+                                                                                                     "Hiring Manager":  "VX004"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Hiring_Tracker.xlsx",
+                                                                 "relative_path":  "Day2_Tue_17Nov/data_room/hr/Hiring_Tracker.xlsx"
+                                                             }
+                                                         ],
+                                             "result_count":  2,
+                                             "truncated":  false
+                                         }
+                         }
+                     ],
+        "Confidence":  {
+                           "level":  "moderate",
+                           "rationale":  "Supporting evidence was retrieved and citation references were validated, but independent or complete support for every requested fact has not been established."
+                       },
+        "Limitations":  [
+
+                        ],
+        "HttpStatus":  200,
+        "Error":  null
+    },
+    {
+        "TestCase":  "TC-06",
+        "Question":  "Which requisitions are currently open?",
+        "ApiStatus":  "FAILED",
+        "Sources":  [
+
+                    ],
+        "Answer":  null,
+        "Evidence":  [
+
+                     ],
+        "Confidence":  null,
+        "Limitations":  [
+
+                        ],
+        "HttpStatus":  502,
+        "Error":  "The remote server returned an error: (502) Bad Gateway."
+    },
+    {
+        "TestCase":  "TC-07",
+        "Question":  "What are the key business metrics for the July-September quarter, including ARR, customers, monthly burn, and runway?",
+        "ApiStatus":  "SUCCESS",
+        "Sources":  [
+                        "rag"
+                    ],
+        "Answer":  "For the JulyâSeptember 2026 quarter, the key business metrics are as follows:\n- ARR (recurring): Rs. 6.1 Cr\n- Customers: 66\n- Monthly burn: Rs. 44 L\n- Runway: 13 months",
+        "Evidence":  [
+                         {
+                             "evidence_id":  "RAG-1",
+                             "source":  "rag",
+                             "source_reference":  {
+                                                      "file_name":  "Board_Update_Jul-Sep_2026.pdf",
+                                                      "source_path":  "Day1_Mon_16Nov/data_room/documents/Board_Update_Jul-Sep_2026.pdf",
+                                                      "chunk_id":  "c10d04a0-f48e-489b-9066-a6addd9d65d6",
+                                                      "chunk_index":  null
+                                                  },
+                             "content":  "Board_Update_Jul-Sep_2026.pdf \u003e Page 1 Veloxa Technologies: Board update Quarterly update. Period: Jul to Sep 2026. Sent 6 Oct 2026. Confidential. Key numbers Metric Value ARR (recurring) Rs. 6.1 Cr Customers 66 Team 19 Monthly burn Rs. 44 L Runway 13 months Product Atlas is in final hardening. We moved GA to absorb unplanned reliability work after a difficult August; the engine itself is feature-complete. Team Hiring is paused while we close the round. One planned departure in marketing. Marketing The Logistics Summit drew 212 registrations, our biggest event yet.",
+                             "similarity":  0.7686165142682208
+                         },
+                         {
+                             "evidence_id":  "RAG-2",
+                             "source":  "rag",
+                             "source_reference":  {
+                                                      "file_name":  "Board_Update_Apr-Jun_2026.pdf",
+                                                      "source_path":  "Day1_Mon_16Nov/data_room/documents/Board_Update_Apr-Jun_2026.pdf",
+                                                      "chunk_id":  "5bc10bce-e19f-4b38-9596-f3cf3965d86d",
+                                                      "chunk_index":  null
+                                                  },
+                             "content":  "Board_Update_Apr-Jun_2026.pdf \u003e Page 1 Veloxa Technologies: Board update Quarterly update. Period: Apr to Jun 2026. Sent 8 Jul 2026. Confidential. Key numbers Metric Value ARR (recurring) Rs. 5.8 Cr Customers 61 Team 19 Monthly burn Rs. 46 L Runway 14 months Product Atlas (routing engine v3) is on track for GA on 15 September. Real-time re-routing is the headline feature customers have asked for. Launch materials are in preparation. Team We will add two backend engineers this quarter to de-risk Atlas. Search is underway. Asks Introductions to logistics CXOs for the September summit.",
+                             "similarity":  0.7330292313204143
+                         },
+                         {
+                             "evidence_id":  "RAG-3",
+                             "source":  "rag",
+                             "source_reference":  {
+                                                      "file_name":  "T1_CEO_Kickoff_Call.docx",
+                                                      "source_path":  "Day1_Mon_16Nov/transcripts/T1_CEO_Kickoff_Call.docx",
+                                                      "chunk_id":  "d725d246-a1e5-4c69-a48f-f91ef78bf124",
+                                                      "chunk_index":  null
+                                                  },
+                             "content":  "T1 Â· CEO kickoff call Auto-generated summary by MeetNotes AI. Recording 38 min, audio quality: fair. Speakers: Ananya R., Speaker 2 (unidentified). Summary Ananya wants a single place to ask questions about the company. Company is roughly eighteen people (\"one-eighty, give or take\"). Says ARR is \"around forty-two crore, maybe forty-five now\". Main concern is engineering speed; the routing engine \"version three\" was promised to some customers \"by the festive season\" and she is not sure it will make it. Key points Engineering team uses \"Linear, I think, or they moved back to the Jeera board\". Code is on Git Hub. Wants to understand \"what Vikram\u0027s people are actually doing all day\". Mentions Pria \"basically holds the routing thing together\" and \"the new boy Rahul\". Finance \"is Meera\u0027s world\". Mentions burn is \"around two point two\" (unit not stated). HR runs surveys \"on Cult Amp or something\"; attrition \"feels high but Deepa says it\u0027s normal\". Marketing is \"doing a big summit thing in September\". Thinks marketing spend is \"fine\". Speaker 2 mentions that the board wants \"the number by March\" (not clear which number). Action items (auto-detected) Set up time with leadership (owner: unassigned) Send the hub sport export (owner: Speaker 2) Look into slag channel for engineering updates",
+                             "similarity":  0.67703946291538
+                         },
+                         {
+                             "evidence_id":  "RAG-4",
+                             "source":  "rag",
+                             "source_reference":  {
+                                                      "file_name":  "T2_CFO_Call.docx",
+                                                      "source_path":  "Day1_Mon_16Nov/transcripts/T2_CFO_Call.docx",
+                                                      "chunk_id":  "48fb1a35-8baf-4e6d-b61a-0aef75c2a0b8",
+                                                      "chunk_index":  null
+                                                  },
+                             "content":  "T2 Â· CFO call Auto-generated summary by MeetNotes AI. Recording 26 min, audio quality: poor (speakerphone). Speakers: Meera I., Ananya R. Summary Meera walked through the financial year. Year runs \"April to March, so we\u0027re in FY twenty-six\" (note: speaker may have said twenty-seven). ARR at the start of the year was \"forty-eight\". Burn has been \"two point two lakhs a month, sometimes two point five\". She plans a hiring freeze \"if the raise slips\". Key points Books moved from Tally to \"Joho books\" \"sometime in Jan, or was it Feb\"; older numbers \"may not match\". Payroll runs on \"Kayka\". Individual salaries \"must never show up in anything Ananya sees, only totals\". Her team: Kartik on planning (\"he\u0027s doing his CFA, so forecasts are a bit late\"), and Fatima Shaikh on accounts and payroll (\"she was out for her wedding, that month was messy\"). Marketing spend: \"Nikhil\u0027s numbers never match mine.\" Mentions \"the two backend roles\" in passing, then the call moves on. Action items (auto-detected) Share the budget vs actuals sheet (owner: Meera) Check the freeze decision with Vicky (owner: unassigned)",
+                             "similarity":  0.6680522250795672
+                         },
+                         {
+                             "evidence_id":  "RAG-5",
+                             "source":  "rag",
+                             "source_reference":  {
+                                                      "file_name":  "T4_Head_of_Marketing_Call.docx",
+                                                      "source_path":  "Day3_Wed_18Nov/transcripts/T4_Head_of_Marketing_Call.docx",
+                                                      "chunk_id":  "0005e88f-3f1e-4344-ab72-a5a7231c57fb",
+                                                      "chunk_index":  null
+                                                  },
+                             "content":  "T4 Â· Head of Marketing call Auto-generated summary by MeetNotes AI. Recording 22 min, audio quality: fair (background noise). Speakers: Nikhil B., Speaker 2. Summary Nikhil calls the September summit \"our best quarter ever for pipeline\". Total marketing spend for the half is \"one point eight\" by his numbers. He thinks finance \"counts things differently\". Paid search is \"going great since Ayesha took over\"; LinkedIn is \"a brand play, you can\u0027t measure it like leads\". Key points Team: Nikhil, Ayesha (performance), and \"Sid\", who writes product content. Sid\u0027s \"v3 launch kit has been ready since July, just waiting on engineering\". Leads tracked in \"Hub Spot\"; ads on Google and \"Linked in campaign manager\". Summit budget \"went a little over, nothing crazy\". Mentions \"Manoj from sales says the summit leads are cold\" and dismisses it. Nikhil says marketing will \"report into the new CRO, I hear\" but has no date. Action items (auto-detected) Send the campaign sheet to finance (owner: Ayesha) Backfill Sid\u0027s role (owner: unassigned)",
+                             "similarity":  0.6611230777115475
+                         }
+                     ],
+        "Confidence":  {
+                           "level":  "moderate",
+                           "rationale":  "Supporting evidence was retrieved and citation references were validated, but independent or complete support for every requested fact has not been established."
+                       },
+        "Limitations":  [
+
+                        ],
+        "HttpStatus":  200,
+        "Error":  null
+    },
+    {
+        "TestCase":  "TC-08",
+        "Question":  "Compare the April-June quarter with the July-September quarter in terms of ARR, customers, team size, monthly burn, and runway.",
+        "ApiStatus":  "FAILED",
+        "Sources":  [
+
+                    ],
+        "Answer":  null,
+        "Evidence":  [
+
+                     ],
+        "Confidence":  null,
+        "Limitations":  [
+
+                        ],
+        "HttpStatus":  502,
+        "Error":  "The remote server returned an error: (502) Bad Gateway."
+    },
+    {
+        "TestCase":  "TC-09",
+        "Question":  "What is the total amount and IGST charged in invoice PIS-114, and who issued the invoice?",
+        "ApiStatus":  "SUCCESS",
+        "Sources":  [
+
+                    ],
+        "Answer":  "I cannot determine the answer from the available structured records and documents.",
+        "Evidence":  [
+
+                     ],
+        "Confidence":  {
+                           "level":  "low",
+                           "rationale":  "No usable supporting evidence was retrieved from the available data sources."
+                       },
+        "Limitations":  [
+                            "No supporting evidence was found."
+                        ],
+        "HttpStatus":  200,
+        "Error":  null
+    },
+    {
+        "TestCase":  "TC-10",
+        "Question":  "What was the original Atlas GA release date, what is the revised date, and who changed it?",
+        "ApiStatus":  "SUCCESS",
+        "Sources":  [
+                        "sql"
+                    ],
+        "Answer":  "The original Atlas GA release date was 2026-09-15, the revised release date is 2026-12-15, and it was changed by vikram.",
+        "Evidence":  [
+                         {
+                             "evidence_id":  "SQL-1",
+                             "source":  "sql",
+                             "source_reference":  {
+                                                      "file_name":  "Jira_Export_ATLAS.xlsx",
+                                                      "sheet":  "Versions",
+                                                      "operation":  "search",
+                                                      "field":  null,
+                                                      "group_by":  null,
+                                                      "filters":  [
+
+                                                                  ]
+                                                  },
+                             "content":  {
+                                             "operation":  "search",
+                                             "results":  [
+                                                             {
+                                                                 "id":  "8d823b5e-52ed-4953-9c9d-c50fa7351488",
+                                                                 "record_type":  "EXCEL_ROW",
+                                                                 "record_key":  "Versions:2",
+                                                                 "source_locator":  {
+                                                                                        "header_row":  1,
+                                                                                        "row_number":  2,
+                                                                                        "sheet_name":  "Versions"
+                                                                                    },
+                                                                 "extracted_data":  {
+                                                                                        "data":  {
+                                                                                                     "Version":  "Atlas GA",
+                                                                                                     "Changed By":  "vikram",
+                                                                                                     "Last Changed":  "2026-09-02",
+                                                                                                     "Release Date":  "2026-12-15",
+                                                                                                     "Original Release Date":  "2026-09-15"
+                                                                                                 },
+                                                                                        "record_status":  "DATA"
+                                                                                    },
+                                                                 "confidence_score":  null,
+                                                                 "file_name":  "Jira_Export_ATLAS.xlsx",
+                                                                 "relative_path":  "Day3_Wed_18Nov/data_room/engineering/Jira_Export_ATLAS.xlsx"
+                                                             }
+                                                         ],
+                                             "result_count":  1,
+                                             "truncated":  false
+                                         }
+                         }
+                     ],
+        "Confidence":  {
+                           "level":  "moderate",
+                           "rationale":  "Supporting evidence was retrieved and citation references were validated, but independent or complete support for every requested fact has not been established."
+                       },
+        "Limitations":  [
+
+                        ],
+        "HttpStatus":  200,
+        "Error":  null
+    },
+    {
+        "TestCase":  "TC-11",
+        "Question":  "How many Jira issues are Done, In Progress, and To Do?",
+        "ApiStatus":  "FAILED",
+        "Sources":  [
+
+                    ],
+        "Answer":  null,
+        "Evidence":  [
+
+                     ],
+        "Confidence":  null,
+        "Limitations":  [
+
+                        ],
+        "HttpStatus":  502,
+        "Error":  "The remote server returned an error: (502) Bad Gateway."
+    },
+    {
+        "TestCase":  "TC-12",
+        "Question":  "How many story points have been completed, how many are still open, and what is the total?",
+        "ApiStatus":  "FAILED",
+        "Sources":  [
+
+                    ],
+        "Answer":  null,
+        "Evidence":  [
+
+                     ],
+        "Confidence":  null,
+        "Limitations":  [
+
+                        ],
+        "HttpStatus":  502,
+        "Error":  "The remote server returned an error: (502) Bad Gateway."
+    },
+    {
+        "TestCase":  "TC-13",
+        "Question":  "Show the number of open story points assigned to each person.",
+        "ApiStatus":  "FAILED",
+        "Sources":  [
+
+                    ],
+        "Answer":  null,
+        "Evidence":  [
+
+                     ],
+        "Confidence":  null,
+        "Limitations":  [
+
+                        ],
+        "HttpStatus":  502,
+        "Error":  "The remote server returned an error: (502) Bad Gateway."
+    },
+    {
+        "TestCase":  "TC-14",
+        "Question":  "What is the status of the ATLAS-5 epic, and how many open story points does it have?",
+        "ApiStatus":  "FAILED",
+        "Sources":  [
+
+                    ],
+        "Answer":  null,
+        "Evidence":  [
+
+                     ],
+        "Confidence":  null,
+        "Limitations":  [
+
+                        ],
+        "HttpStatus":  502,
+        "Error":  "The remote server returned an error: (502) Bad Gateway."
+    },
+    {
+        "TestCase":  "TC-15",
+        "Question":  "Which service has recorded the highest number of incidents, and how many incidents were recorded for each service?",
+        "ApiStatus":  "SUCCESS",
+        "Sources":  [
+                        "sql"
+                    ],
+        "Answer":  "The service that has recorded the highest number of incidents is routing-api with 6 incidents. The number of incidents recorded for each service is as follows: routing-api has 6 incidents, traffic-ingest has 3 incidents, and planner-web has 2 incidents.",
+        "Evidence":  [
+                         {
+                             "evidence_id":  "SQL-1",
+                             "source":  "sql",
+                             "source_reference":  {
+                                                      "file_name":  "Incidents_Aug-Oct_2026.xlsx",
+                                                      "sheet":  "Incidents",
+                                                      "operation":  "group_count",
+                                                      "field":  null,
+                                                      "group_by":  "Service",
+                                                      "filters":  [
+
+                                                                  ]
+                                                  },
+                             "content":  {
+                                             "operation":  "group_count",
+                                             "results":  [
+                                                             {
+                                                                 "group_value":  "routing-api",
+                                                                 "total_count":  6
+                                                             },
+                                                             {
+                                                                 "group_value":  "traffic-ingest",
+                                                                 "total_count":  3
+                                                             },
+                                                             {
+                                                                 "group_value":  "planner-web",
+                                                                 "total_count":  2
+                                                             }
+                                                         ],
+                                             "truncated":  false
+                                         }
+                         }
+                     ],
+        "Confidence":  {
+                           "level":  "moderate",
+                           "rationale":  "Supporting evidence was retrieved and citation references were validated, but independent or complete support for every requested fact has not been established."
+                       },
+        "Limitations":  [
+
+                        ],
+        "HttpStatus":  200,
+        "Error":  null
+    },
+    {
+        "TestCase":  "TC-16",
+        "Question":  "What was the total gross payroll for January, February, and March 2026?",
+        "ApiStatus":  "SUCCESS",
+        "Sources":  [
+
+                    ],
+        "Answer":  "I cannot determine the answer from the available structured records and documents.",
+        "Evidence":  [
+
+                     ],
+        "Confidence":  {
+                           "level":  "low",
+                           "rationale":  "No usable supporting evidence was retrieved from the available data sources."
+                       },
+        "Limitations":  [
+                            "No supporting evidence was found."
+                        ],
+        "HttpStatus":  200,
+        "Error":  null
+    }
+]
