@@ -12,8 +12,6 @@ MAX_TERM_LENGTH = 100
 STATEMENT_TIMEOUT_MS = 5000
 
 
-# Only these source files and their corresponding sheets are queryable.
-# Sheet names are represented by the prefix of record_key.
 SOURCE_SCHEMAS = {
     "Employee_Master.xlsx": {
         "sheet": "Employees",
@@ -40,7 +38,7 @@ SOURCE_SCHEMAS = {
                 },
             },
             "Epics": {
-                "fields": {"Epic Link", "Epic Name"},
+                "fields": {"Key", "Epic Name"},
             },
             "Versions": {
                 "fields": {
@@ -153,8 +151,10 @@ def _validate_field(field: str, allowed_fields: set[str]) -> None:
         raise ValueError(f"Unsupported structured field: {field}")
 
 
-
-def _validate_filters(filters: list[dict], allowed_fields: set[str]) -> None:
+def _validate_filters(
+    filters: list[dict],
+    allowed_fields: set[str],
+) -> None:
     if not isinstance(filters, list) or len(filters) > 10:
         raise ValueError("Filters must be a list containing at most 10 items.")
 
@@ -172,10 +172,14 @@ def _validate_filters(filters: list[dict], allowed_fields: set[str]) -> None:
                 not isinstance(value, list)
                 or not value
                 or len(value) > 10
-                or not all(isinstance(v, str) and v.strip() for v in value)
+                or not all(
+                    isinstance(v, str) and v.strip()
+                    for v in value
+                )
             ):
                 raise ValueError(
-                    "The 'in' operator requires a non-empty list of up to 10 strings."
+                    "The 'in' operator requires a non-empty list "
+                    "of up to 10 strings."
                 )
 
             if any(len(v) > MAX_TERM_LENGTH for v in value):
@@ -192,10 +196,15 @@ def _validate_filters(filters: list[dict], allowed_fields: set[str]) -> None:
             raise ValueError("Unsupported filter operator.")
 
 
-
 def _numeric_expression() -> str:
-    """Safely convert numeric JSON values; invalid values become NULL."""
-    value = "(r.extracted_data->'data'->>%s)"
+    """
+    Convert numeric JSON text into PostgreSQL numeric safely.
+
+    Commas and currency symbols are removed, so values such as
+    '30,65,000' and '₹30,65,000' can be aggregated.
+    Invalid values become NULL.
+    """
+    value = "regexp_replace(COALESCE(r.extracted_data->'data'->>%s, ''), '[^0-9.-]', '', 'g')"
 
     return (
         f"CASE WHEN {value} ~ '^-?[0-9]+([.][0-9]+)?$' "
@@ -296,7 +305,9 @@ def execute_structured_query(plan: dict) -> dict:
 
         elif operator == "in":
             placeholders = ", ".join(["%s"] * len(value))
-            where_clauses.append(f"{expression} IN ({placeholders})")
+            where_clauses.append(
+                f"{expression} IN ({placeholders})"
+            )
             params.extend(value)
 
     base = """
@@ -359,7 +370,10 @@ def execute_structured_query(plan: dict) -> dict:
             ORDER BY total_count DESC
         """
 
-        rows = _execute_query(sql, tuple([group_by] + params))
+        rows = _execute_query(
+            sql,
+            tuple([group_by] + params),
+        )
 
         return {
             "operation": operation,
@@ -377,7 +391,6 @@ def execute_structured_query(plan: dict) -> dict:
             {base} {where_sql}
         """
 
-        # numeric_sql appears twice, with two placeholders each.
         numeric_params = [field, field, field, field]
 
         rows = _execute_query(
@@ -402,8 +415,13 @@ def execute_structured_query(plan: dict) -> dict:
             ORDER BY total_sum DESC NULLS LAST
         """
 
-        # One placeholder for group_by, plus four for numeric_sql.
-        query_params = [group_by, field, field, field, field] + params
+        query_params = [
+            group_by,
+            field,
+            field,
+            field,
+            field,
+        ] + params
 
         rows = _execute_query(
             sql,

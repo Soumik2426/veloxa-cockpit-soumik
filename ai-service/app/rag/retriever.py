@@ -1,6 +1,11 @@
+import os
 from pgvector import Vector
 from app.rag.embeddings import generate_embedding
 from app.rag.vector_store import get_connection
+
+MIN_SIMILARITY = float(
+    os.getenv("RAG_MIN_SIMILARITY", "0.58")
+)
 
 
 def retrieve_relevant_chunks(
@@ -55,6 +60,10 @@ def retrieve_relevant_chunks(
         for row in rows:
 
             chunk_id, content, metadata, similarity = row
+            similarity = float(similarity)
+
+            if similarity < MIN_SIMILARITY:
+                continue
 
             results.append({
                 "chunk_id": str(chunk_id),
@@ -63,7 +72,7 @@ def retrieve_relevant_chunks(
                 "source_path": metadata.get("source_path"),
                 "document_type": metadata.get("document_type"),
                 "section": metadata.get("section"),
-                "similarity": float(similarity)
+                "similarity": similarity
             })
 
         return results

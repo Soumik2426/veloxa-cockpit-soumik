@@ -1,6 +1,6 @@
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class AgentAskRequest(BaseModel):
@@ -35,14 +35,41 @@ class StructuredQueryPlan(BaseModel):
 
     limit: int = Field(default=25, ge=1, le=25)
 
+    @model_validator(mode="after")
+    def validate_operation_fields(self):
+        if self.operation in {"sum", "group_sum"} and not self.field:
+            raise ValueError("A field is required for sum operations.")
+
+        if self.operation in {"group_count", "group_sum"} and not self.group_by:
+            raise ValueError("A group_by field is required for grouped operations.")
+
+        if self.operation == "group_sum" and self.field == self.group_by:
+            raise ValueError("The aggregation and grouping fields must differ.")
+
+        return self
+
 
 class RetrievalPlan(BaseModel):
     sources: list[Literal["sql", "rag"]] = Field(max_length=2)
-    search_terms: list[str] = Field(default_factory=list, max_length=6)
-    rag_query: str = Field(default="", max_length=500)
 
-    # Optional for backward compatibility with generic SQL searches.
+    search_terms: list[str] = Field(
+        default_factory=list,
+        max_length=6,
+    )
+
+    rag_query: str = Field(
+        default="",
+        max_length=500,
+    )
+
+    # Backward compatibility with existing single-query plans.
     structured_query: StructuredQueryPlan | None = None
+
+    # Supports multi-sheet and dependent lookups.
+    structured_queries: list[StructuredQueryPlan] = Field(
+        default_factory=list,
+        max_length=10,
+    )
 
 
 class AnswerDraft(BaseModel):

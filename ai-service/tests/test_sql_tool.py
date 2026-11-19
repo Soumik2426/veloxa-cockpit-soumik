@@ -29,7 +29,7 @@ class FakeCursor:
         return [("record-id",)]
 
 
-class SQLToolTests:
+class TestSQLTool(unittest.TestCase):
 
     def setUp(self):
         self.cursor = FakeCursor()

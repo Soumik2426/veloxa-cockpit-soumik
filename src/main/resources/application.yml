@@ -1,4 +1,8 @@
 spring:
+  http:
+    client:
+      factory: simple
+
   application:
     name: veloxa-cockpit
 

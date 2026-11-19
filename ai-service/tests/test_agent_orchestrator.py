@@ -1,3 +1,4 @@
+
 import unittest
 from uuid import uuid4
 from unittest.mock import patch
@@ -42,128 +43,295 @@ def rag_chunk():
 
 
 class AgentOrchestratorTests(unittest.TestCase):
+
     def run_with_plan(self, plan, answer=None):
         generated = [plan]
+
         if answer is not None:
             generated.append(answer)
-        return patch("app.agent.orchestrator._generate_json", side_effect=generated)
+
+        return patch(
+            "app.agent.orchestrator._generate_json",
+            side_effect=generated,
+        )
 
     def test_sql_only_question_uses_structured_records(self):
-        plan = RetrievalPlan(sources=["sql"], search_terms=["revenue"])
-        answer = AnswerDraft(answer="Revenue is shown in the cited row [SQL-1].")
+        plan = RetrievalPlan(
+            sources=["sql"],
+            search_terms=["revenue"],
+        )
+
+        answer = AnswerDraft(
+            answer="The row shows a delay [SQL-1]."
+        )
+
         with self.run_with_plan(plan, answer), \
-             patch("app.agent.orchestrator.search_structured_records", return_value=[sql_row()]) as sql, \
-             patch("app.agent.orchestrator.retrieve_relevant_chunks") as rag:
-            response = answer_question("What is the status of Orion?")
+             patch(
+                 "app.agent.orchestrator.search_structured_records",
+                 return_value=[sql_row()],
+             ) as sql, \
+             patch(
+                 "app.agent.orchestrator.retrieve_relevant_chunks"
+             ) as rag:
+
+            response = answer_question(
+                "What is the status of Orion?"
+            )
+
         sql.assert_called_once_with(["revenue"])
         rag.assert_not_called()
+
         self.assertEqual(response.retrieval_sources, ["sql"])
-        self.assertEqual(response.evidence[0]["source_reference"]["file_name"], "projects.csv")
+        self.assertEqual(
+            response.evidence[0]["source_reference"]["file_name"],
+            "projects.csv",
+        )
         self.assertEqual(response.confidence.level, "moderate")
 
     def test_rag_only_question_uses_existing_retriever(self):
-        plan = RetrievalPlan(sources=["rag"], rag_query="delivery blockers")
-        answer = AnswerDraft(answer="The review reports blocked dependencies [RAG-1].")
+        plan = RetrievalPlan(
+            sources=["rag"],
+            rag_query="delivery blockers",
+        )
+
+        answer = AnswerDraft(
+            answer="The review reports blocked dependencies [RAG-1]."
+        )
+
         with self.run_with_plan(plan, answer), \
-             patch("app.agent.orchestrator.search_structured_records") as sql, \
-             patch("app.agent.orchestrator.retrieve_relevant_chunks", return_value=[rag_chunk()]) as rag:
-            response = answer_question("Why is delivery blocked?")
+             patch(
+                 "app.agent.orchestrator.search_structured_records"
+             ) as sql, \
+             patch(
+                 "app.agent.orchestrator.retrieve_relevant_chunks",
+                 return_value=[rag_chunk()],
+             ) as rag:
+
+            response = answer_question(
+                "Why is delivery blocked?"
+            )
+
         sql.assert_not_called()
-        rag.assert_called_once_with("delivery blockers", top_k=5)
-        self.assertEqual(response.evidence[0]["evidence_id"], "RAG-1")
+        rag.assert_called_once_with(
+            "delivery blockers",
+            top_k=5,
+        )
+
+        self.assertEqual(
+            response.evidence[0]["evidence_id"],
+            "RAG-1",
+        )
         self.assertEqual(response.confidence.level, "moderate")
 
     def test_hybrid_question_combines_sql_and_document_evidence(self):
         plan = RetrievalPlan(
-            sources=["sql", "rag"], search_terms=["Orion"], rag_query="Orion delivery"
+            sources=["sql", "rag"],
+            search_terms=["Orion"],
+            rag_query="Orion delivery",
         )
-        answer = AnswerDraft(answer="The row shows a delay and the review cites dependencies.")
+
+        answer = AnswerDraft(
+            answer=(
+                "The row shows a delay [SQL-1], "
+                "and the review cites dependencies [RAG-1]."
+            )
+        )
+
         with self.run_with_plan(plan, answer), \
-             patch("app.agent.orchestrator.search_structured_records", return_value=[sql_row()]), \
-             patch("app.agent.orchestrator.retrieve_relevant_chunks", return_value=[rag_chunk()]):
-            response = answer_question("Compare Orion's delivery status with management commentary.")
-        self.assertEqual(response.retrieval_sources, ["sql", "rag"])
-        self.assertEqual([item["evidence_id"] for item in response.evidence], ["SQL-1", "RAG-1"])
+             patch(
+                 "app.agent.orchestrator.search_structured_records",
+                 return_value=[sql_row()],
+             ), \
+             patch(
+                 "app.agent.orchestrator.retrieve_relevant_chunks",
+                 return_value=[rag_chunk()],
+             ):
+
+            response = answer_question(
+                "Compare Orion's delivery status with management commentary."
+            )
+
+        self.assertEqual(
+            response.retrieval_sources,
+            ["sql", "rag"],
+        )
+
+        self.assertEqual(
+            [item["evidence_id"] for item in response.evidence],
+            ["SQL-1", "RAG-1"],
+        )
+
         self.assertEqual(response.confidence.level, "high")
 
     def test_no_evidence_returns_insufficient_answer_without_final_generation(self):
-        plan = RetrievalPlan(sources=["sql", "rag"], search_terms=["unknown"])
+        plan = RetrievalPlan(
+            sources=["sql", "rag"],
+            search_terms=["unknown"],
+        )
+
         with self.run_with_plan(plan), \
-             patch("app.agent.orchestrator.search_structured_records", return_value=[]), \
-             patch("app.agent.orchestrator.retrieve_relevant_chunks", return_value=[]):
-            response = answer_question("What happened to the unknown project?")
+             patch(
+                 "app.agent.orchestrator.search_structured_records",
+                 return_value=[],
+             ), \
+             patch(
+                 "app.agent.orchestrator.retrieve_relevant_chunks",
+                 return_value=[],
+             ):
+
+            response = answer_question(
+                "What happened to the unknown project?"
+            )
+
         self.assertIn("cannot determine", response.answer)
         self.assertEqual(response.confidence.level, "low")
         self.assertEqual(response.evidence, [])
         self.assertEqual(len(response.limitations), 1)
 
     def test_conflicts_are_reported_and_lower_confidence(self):
-        plan = RetrievalPlan(sources=["sql", "rag"], search_terms=["Orion"], rag_query="Orion")
+        plan = RetrievalPlan(
+            sources=["sql", "rag"],
+            search_terms=["Orion"],
+            rag_query="Orion",
+        )
+
         answer = AnswerDraft(
             answer="Records disagree about the delivery date.",
-            conflicts=["The structured row says delayed while the review describes delivery as complete."],
+            conflicts=[
+                "The structured row says delayed while the review describes delivery as complete."
+            ],
         )
+
         with self.run_with_plan(plan, answer), \
-             patch("app.agent.orchestrator.search_structured_records", return_value=[sql_row()]), \
-             patch("app.agent.orchestrator.retrieve_relevant_chunks", return_value=[rag_chunk()]):
-            response = answer_question("Was Orion delivered?")
+             patch(
+                 "app.agent.orchestrator.search_structured_records",
+                 return_value=[sql_row()],
+             ), \
+             patch(
+                 "app.agent.orchestrator.retrieve_relevant_chunks",
+                 return_value=[rag_chunk()],
+             ):
+
+            response = answer_question(
+                "Was Orion delivered?"
+            )
+
         self.assertEqual(response.confidence.level, "low")
-        self.assertTrue(any("Conflicting evidence" in item for item in response.limitations))
+
+        self.assertTrue(
+            any(
+                "Conflicting evidence" in item
+                for item in response.limitations
+            )
+        )
 
     def test_database_failure_is_reported_without_fabricating_evidence(self):
-        plan = RetrievalPlan(sources=["sql"], search_terms=["revenue"])
+        plan = RetrievalPlan(
+            sources=["sql"],
+            search_terms=["revenue"],
+        )
+
         with self.run_with_plan(plan), \
-             patch("app.agent.orchestrator.search_structured_records", side_effect=OSError("db unavailable")):
-            response = answer_question("What was the revenue?")
+             patch(
+                 "app.agent.orchestrator.search_structured_records",
+                 side_effect=OSError("db unavailable"),
+             ):
+
+            response = answer_question(
+                "What was the revenue?"
+            )
+
         self.assertEqual(response.confidence.level, "low")
         self.assertEqual(response.evidence, [])
-        self.assertIn("Structured record retrieval was unavailable.", response.limitations)
+
+        self.assertIn(
+            "Structured record retrieval was unavailable.",
+            response.limitations,
+        )
 
     def test_gemini_failure_during_planning_is_safely_reported(self):
-        with patch("app.agent.orchestrator._generate_json", side_effect=GeminiServiceError("Gemini request failed.")):
+        with patch(
+            "app.agent.orchestrator._generate_json",
+            side_effect=GeminiServiceError("Gemini request failed."),
+        ):
             with self.assertRaises(GeminiServiceError):
                 answer_question("Summarize delivery risks.")
 
     def test_gemini_failure_during_answer_generation_is_safely_reported(self):
-        plan = RetrievalPlan(sources=["sql"], search_terms=["Orion"])
+        plan = RetrievalPlan(
+            sources=["sql"],
+            search_terms=["Orion"],
+        )
+
         with patch(
             "app.agent.orchestrator._generate_json",
-            side_effect=[plan, GeminiServiceError("Gemini request failed.")],
-        ), patch("app.agent.orchestrator.search_structured_records", return_value=[sql_row()]):
+            side_effect=[
+                plan,
+                GeminiServiceError("Gemini request failed."),
+            ],
+        ), patch(
+            "app.agent.orchestrator.search_structured_records",
+            return_value=[sql_row()],
+        ):
             with self.assertRaises(GeminiServiceError):
                 answer_question("What is happening with Orion?")
 
     def test_empty_question_is_rejected(self):
         with self.assertRaises(ValidationError):
             AgentAskRequest(question="")
+
         with self.assertRaises(ValueError):
             answer_question("   ")
 
     def test_agent_endpoint_maps_gemini_failure_to_gateway_error(self):
-        with patch("app.api.answer_question", side_effect=GeminiServiceError("private details")):
+        with patch(
+            "app.api.answer_question",
+            side_effect=GeminiServiceError("private details"),
+        ):
             with self.assertRaises(HTTPException) as raised:
-                ask_agent(AgentAskRequest(question="Summarize delivery risks."))
+                ask_agent(
+                    AgentAskRequest(
+                        question="Summarize delivery risks."
+                    )
+                )
+
         self.assertEqual(raised.exception.status_code, 502)
-        self.assertNotIn("private details", str(raised.exception.detail))
+        self.assertNotIn(
+            "private details",
+            str(raised.exception.detail),
+        )
 
     def test_document_processing_endpoint_contract_remains_available(self):
         job_id = uuid4()
-        batch = DocumentBatch(job_id=job_id, documents=[{
-            "file_id": uuid4(),
-            "file_name": "memo.txt",
-            "relative_path": "memo.txt",
-            "file_type": "TEXT",
-            "checksum": "a" * 64,
-            "job_id": job_id,
-        }])
-        with patch("app.api.process_document", return_value={
-            "file_id": str(batch.documents[0].file_id),
-            "status": "processed",
-            "chunks": 2,
-            "embeddings": 2,
-        }) as processor:
+
+        batch = DocumentBatch(
+            job_id=job_id,
+            documents=[
+                {
+                    "file_id": uuid4(),
+                    "file_name": "memo.txt",
+                    "relative_path": "memo.txt",
+                    "file_type": "TEXT",
+                    "checksum": "a" * 64,
+                    "job_id": job_id,
+                }
+            ],
+        )
+
+        with patch(
+            "app.api.process_document",
+            return_value={
+                "file_id": str(batch.documents[0].file_id),
+                "status": "processed",
+                "chunks": 2,
+                "embeddings": 2,
+            },
+        ) as processor:
+
             response = process_documents(batch)
+
         processor.assert_called_once()
+
         self.assertEqual(response["documents_received"], 1)
         self.assertEqual(response["successfully_processed"], 1)
         self.assertEqual(response["chunks_generated"], 2)
