@@ -369,13 +369,24 @@ def execute_structured_query(plan: dict) -> dict:
     if operation in {"group_count", "group_sum"}:
         _validate_field(group_by, allowed_fields)
 
-    params = [source_file, f"{sheet}:%"]
+
+    params = [source_file, sheet]
 
     where_clauses = [
         "r.extraction_status = 'SUCCESS'",
         "f.file_name = %s",
-        "r.record_key LIKE %s",
+        """
+        (
+            CASE
+                WHEN split_part(r.record_key, ':', 1)
+                     IN ('ROW', 'CSV_ROW')
+                    THEN 'Records'
+                ELSE split_part(r.record_key, ':', 1)
+            END
+        ) = %s
+        """,
     ]
+
 
     for item in filters:
         field_name = item["field"]
