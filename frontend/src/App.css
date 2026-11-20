@@ -2111,3 +2111,400 @@ main {
     font-size: 17px;
   }
 }
+
+/* Risk monitor */
+
+.risk-intro-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 17px;
+  padding: 22px;
+  border: 1px solid #e8ebef;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.risk-intro-icon {
+  width: 45px;
+  height: 45px;
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 11px;
+  color: #a36b35;
+  background: #fff4e8;
+}
+
+.risk-intro-card h2 {
+  margin: 0;
+  color: #273449;
+  font-size: 14px;
+}
+
+.risk-intro-card p {
+  margin-top: 7px;
+  color: #7e8b9d;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.risk-intro-card span {
+  display: inline-block;
+  margin-top: 9px;
+  color: #9aa5b3;
+  font-size: 10px;
+}
+
+.risk-loading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 20px;
+  padding: 22px;
+  border: 1px solid #e8ebef;
+  border-radius: 9px;
+  color: #416b9f;
+  background: #fff;
+}
+
+.risk-loading strong {
+  color: #344257;
+  font-size: 12px;
+}
+
+.risk-loading p {
+  margin-top: 5px;
+  color: #929dac;
+  font-size: 10px;
+}
+
+.risk-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 30px 0 16px;
+  color: #a36b35;
+}
+
+.risk-section-heading h2 {
+  margin: 0;
+  color: #273449;
+  font: 700 17px 'Manrope', sans-serif;
+}
+
+.risk-result-card,
+.risk-priority-card {
+  margin-top: 15px;
+  padding: 22px;
+  border: 1px solid #e8ebef;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.risk-result-card > h3,
+.risk-priority-card > h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 15px;
+  color: #344257;
+  font-size: 13px;
+}
+
+.risk-priority-card {
+  border-color: #f0e1c8;
+  background: #fffdf8;
+}
+
+.risk-priority-card > h3 {
+  color: #986c32;
+}
+
+.risk-response-content {
+  color: #53647b;
+  font-size: 12px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+
+.risk-response-content p {
+  margin: 0 0 10px;
+}
+
+.risk-response-content h3 {
+  margin: 16px 0 8px;
+  color: #344257;
+  font-size: 13px;
+}
+
+.risk-bullet {
+  display: flex;
+  gap: 9px;
+  margin: 6px 0;
+}
+
+.risk-bullet > span:first-child {
+  flex-shrink: 0;
+  color: #a36b35;
+  font-weight: 700;
+}
+
+.risk-spacer {
+  height: 7px;
+}
+
+.risk-evidence {
+  margin-top: 17px;
+  padding: 19px;
+  border: 1px solid #e8ebef;
+  border-radius: 9px;
+  background: #fbfcfd;
+}
+
+.risk-evidence h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  color: #52647c;
+  font-size: 12px;
+}
+
+.risk-evidence-item {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid #e8ebef;
+  border-radius: 7px;
+  color: #65758a;
+  background: #fff;
+  font-size: 10px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.risk-result-card pre {
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: #53647b;
+  font-size: 11px;
+}
+
+.risk-disclaimer {
+  margin-top: 16px;
+  color: #929dac;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+/* Risk monitor - executive evidence cards */
+
+.risk-evidence-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 16px;
+}
+
+.risk-evidence-heading h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #344257;
+  font-size: 13px;
+}
+
+.risk-evidence-heading p {
+  margin-top: 6px;
+  color: #8994a4;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.risk-evidence-count {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  color: #416b9f;
+  background: #edf3fa;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.risk-evidence-list {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.risk-evidence-card {
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid #e5eaf0;
+  border-radius: 9px;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.risk-evidence-card:hover {
+  border-color: #cbd8e8;
+  box-shadow: 0 5px 15px rgba(25, 50, 85, 0.035);
+}
+
+.risk-evidence-card-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.risk-evidence-file-icon {
+  width: 39px;
+  height: 39px;
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 9px;
+  color: #416b9f;
+  background: #edf3fa;
+}
+
+.risk-evidence-file-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.risk-evidence-file-info h4 {
+  margin: 0;
+  color: #344257;
+  font-size: 12px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.risk-evidence-file-info > span {
+  display: block;
+  margin-top: 5px;
+  color: #8994a4;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.risk-evidence-source {
+  flex-shrink: 0;
+  padding: 5px 8px;
+  border-radius: 5px;
+  color: #58779d;
+  background: #f0f4f9;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.risk-evidence-excerpt {
+  margin: 13px 0 0;
+  padding: 11px 12px;
+  border-radius: 7px;
+  color: #5d6c81;
+  background: #f7f9fb;
+  font-size: 11px;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.risk-evidence-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #edf0f3;
+}
+
+.risk-evidence-id {
+  color: #8b97a7;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.risk-developer-details {
+  min-width: 0;
+  color: #60738c;
+  font-size: 10px;
+}
+
+.risk-developer-details summary {
+  cursor: pointer;
+  font-weight: 600;
+  list-style: none;
+}
+
+.risk-developer-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.risk-developer-details summary::before {
+  content: '+';
+  display: inline-block;
+  margin-right: 6px;
+  color: #416b9f;
+  font-weight: 700;
+}
+
+.risk-developer-details[open] summary::before {
+  content: '−';
+}
+
+.risk-developer-details pre {
+  max-width: 100%;
+  max-height: 350px;
+  margin-top: 11px;
+  padding: 12px;
+  overflow: auto;
+  border: 1px solid #e5eaf0;
+  border-radius: 7px;
+  color: #53647b;
+  background: #f6f8fb;
+  font-size: 10px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+  .risk-evidence {
+    padding: 14px;
+  }
+
+  .risk-evidence-heading {
+    flex-direction: column;
+  }
+
+  .risk-evidence-card {
+    padding: 12px;
+  }
+
+  .risk-evidence-card-top {
+    flex-wrap: wrap;
+  }
+
+  .risk-evidence-source {
+    margin-left: 51px;
+  }
+
+  .risk-evidence-card-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .risk-developer-details {
+    width: 100%;
+  }
+}
+

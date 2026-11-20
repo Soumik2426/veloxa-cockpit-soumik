@@ -269,11 +269,29 @@ EVIDENCE SUFFICIENCY AND ATTRIBUTION
 22. Add a limitation whenever the evidence does not establish the requested
     conclusion, even if retrieval and citation validation succeeded.
 
+
 Return only valid JSON matching AnswerDraft with these fields:
+
 - answer: the user-facing answer with inline evidence citations.
-- conflicts: material disagreements between supplied evidence items, or [].
-- limitations: missing information or retrieval limitations relevant to the
-  question, or [].
+- conflicts: a list of concise STRING values describing material disagreements
+  between supplied evidence items. Do not return objects or dictionaries
+  inside this list. Return [] when no material conflicts exist.
+- limitations: a list of concise STRING values describing missing information
+  or retrieval limitations relevant to the question. Return [] when none exist.
+
+IMPORTANT JSON FORMAT:
+{
+  "answer": "Your concise answer with inline evidence citations.",
+  "conflicts": [
+    "Financial figures differ between the board update and management transcripts."
+  ],
+  "limitations": [
+    "The attrition figure lacks a clearly specified unit."
+  ]
+}
+
+Every item in conflicts and limitations must be a string.
+
 """
 
 
@@ -787,7 +805,18 @@ def _normalize_retrieval_plan(parsed_json) -> dict:
 
 
 
-def _normalize_provider_response(parsed_json, response_model: type[BaseModel]) -> dict:
+
+def _normalize_provider_response(
+    parsed_json,
+    response_model: type[BaseModel],
+) -> dict:
+    """
+    Normalize provider responses before Pydantic validation.
+
+    This keeps Gemini and Groq responses compatible with the
+    application's existing response models.
+    """
+
     if response_model is RetrievalPlan:
         return _normalize_retrieval_plan(parsed_json)
 
@@ -795,9 +824,57 @@ def _normalize_provider_response(parsed_json, response_model: type[BaseModel]) -
         raise ValueError("AI response must be a JSON object.")
 
     data = dict(parsed_json)
-    if response_model is AnswerDraft and isinstance(data.get("answer_draft"), dict):
+
+    if (
+        response_model is AnswerDraft
+        and isinstance(data.get("answer_draft"), dict)
+    ):
         data = dict(data["answer_draft"])
+
+    if response_model is AnswerDraft:
+        raw_conflicts = data.get("conflicts")
+
+        if raw_conflicts is None:
+            data["conflicts"] = []
+
+        else:
+            if isinstance(raw_conflicts, (str, dict)):
+                raw_conflicts = [raw_conflicts]
+
+            if isinstance(raw_conflicts, list):
+                normalized_conflicts = []
+
+                for conflict in raw_conflicts:
+                    if isinstance(conflict, str):
+                        if conflict.strip():
+                            normalized_conflicts.append(conflict.strip())
+
+                    elif isinstance(conflict, dict):
+                        description = (
+                            conflict.get("description")
+                            or conflict.get("conflict")
+                            or conflict.get("summary")
+                            or conflict.get("details")
+                        )
+
+                        if description is not None:
+                            normalized_conflicts.append(str(description).strip())
+                        else:
+                            normalized_conflicts.append(
+                                json.dumps(
+                                    conflict,
+                                    ensure_ascii=False,
+                                    default=str,
+                                )
+                            )
+
+                    elif conflict is not None:
+                        normalized_conflicts.append(str(conflict))
+
+                data["conflicts"] = normalized_conflicts
+
     return data
+
 
 
 def _normalize_groq_response(

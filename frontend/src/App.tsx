@@ -1,3 +1,4 @@
+import Risks from './pages/Risks';
 import AskCompany from './pages/AskCompany';
 import AgentChat from './pages/AgentChat';
 import AgentConversations from './pages/AgentConversations';
@@ -5,7 +6,6 @@ import AgentProfile from './pages/AgentProfile';
 import { useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import {
-  ShieldAlert,
   Mic,
   Database,
 } from 'lucide-react';
@@ -47,16 +47,7 @@ function AppContent() {
             />
             <Route path="/ask-company" element={<AskCompany />} />
 
-            <Route
-              path="/risks"
-              element={
-                <PagePlaceholder
-                  title="Risk monitor"
-                  description="Identify business risks, contradictions and unresolved concerns."
-                  icon={ShieldAlert}
-                />
-              }
-            />
+            <Route path="/risks" element={<Risks />} />
 
             <Route
               path="/voice-notes"
