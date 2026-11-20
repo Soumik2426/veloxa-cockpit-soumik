@@ -1,3 +1,4 @@
+import AgentChat from './pages/AgentChat';
 import AgentConversations from './pages/AgentConversations';
 import AgentProfile from './pages/AgentProfile';
 import { useState } from 'react';
@@ -40,7 +41,10 @@ function AppContent() {
               path="/agents/:employeeCode/conversations"
               element={<AgentConversations />}
             />
-
+            <Route
+              path="/conversations/:conversationId/messages"
+              element={<AgentChat />}
+            />
             <Route
               path="/ask-company"
               element={

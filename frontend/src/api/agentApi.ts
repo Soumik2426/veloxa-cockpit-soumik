@@ -4,6 +4,11 @@ import type {
   AgentConversation,
   CreateConversationRequest,
 } from '../types/conversation';
+import type {
+  AgentMessage,
+  ConversationDetails,
+  SendMessageRequest,
+} from '../types/message';
 
 function extractList<T>(payload: unknown): T[] {
   if (Array.isArray(payload)) {
@@ -16,7 +21,7 @@ function extractList<T>(payload: unknown): T[] {
 
   const response = payload as Record<string, unknown>;
 
-  for (const key of ['data', 'content', 'conversations', 'result']) {
+  for (const key of ['data', 'content', 'conversations', 'messages', 'result']) {
     const value = response[key];
 
     if (Array.isArray(value)) {
@@ -26,7 +31,12 @@ function extractList<T>(payload: unknown): T[] {
     if (value && typeof value === 'object') {
       const nested = value as Record<string, unknown>;
 
-      for (const nestedKey of ['data', 'content', 'conversations']) {
+      for (const nestedKey of [
+        'data',
+        'content',
+        'conversations',
+        'messages',
+      ]) {
         if (Array.isArray(nested[nestedKey])) {
           return nested[nestedKey] as T[];
         }
@@ -37,21 +47,31 @@ function extractList<T>(payload: unknown): T[] {
   return [];
 }
 
+function unwrapObject<T>(payload: unknown): T {
+  if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+    const response = payload as Record<string, unknown>;
+
+    if (response.data && typeof response.data === 'object') {
+      return response.data as T;
+    }
+  }
+
+  return payload as T;
+}
+
 export const agentApi = {
   async getAllAgents(): Promise<EmployeeAgent[]> {
     const response = await apiClient.get<EmployeeAgent[]>(
       '/api/v1/employee-agents'
     );
-
     return response.data;
   },
 
   async getAgentByCode(employeeCode: string): Promise<EmployeeAgent> {
-    const response = await apiClient.get<EmployeeAgent>(
+    const response = await apiClient.get(
       `/api/v1/employee-agents/${encodeURIComponent(employeeCode)}`
     );
-
-    return response.data;
+    return unwrapObject<EmployeeAgent>(response.data);
   },
 
   async getConversations(
@@ -60,7 +80,6 @@ export const agentApi = {
     const response = await apiClient.get(
       `/api/v1/employee-agents/${encodeURIComponent(employeeCode)}/conversations`
     );
-
     return extractList<AgentConversation>(response.data);
   },
 
@@ -72,17 +91,33 @@ export const agentApi = {
       `/api/v1/employee-agents/${encodeURIComponent(employeeCode)}/conversations`,
       request
     );
+    return unwrapObject<AgentConversation>(response.data);
+  },
 
-    const payload = response.data;
+  async getConversation(
+    conversationId: string
+  ): Promise<ConversationDetails> {
+    const response = await apiClient.get(
+      `/api/v1/conversations/${encodeURIComponent(conversationId)}`
+    );
+    return unwrapObject<ConversationDetails>(response.data);
+  },
 
-    if (payload && typeof payload === 'object') {
-      const result = payload as Record<string, unknown>;
+  async getMessages(conversationId: string): Promise<AgentMessage[]> {
+    const response = await apiClient.get(
+      `/api/v1/conversations/${encodeURIComponent(conversationId)}/messages`
+    );
+    return extractList<AgentMessage>(response.data);
+  },
 
-      if (result.data && typeof result.data === 'object') {
-        return result.data as AgentConversation;
-      }
-    }
-
-    return payload as AgentConversation;
+  async sendMessage(
+    conversationId: string,
+    request: SendMessageRequest
+  ): Promise<AgentMessage> {
+    const response = await apiClient.post(
+      `/api/v1/conversations/${encodeURIComponent(conversationId)}/messages`,
+      request
+    );
+    return unwrapObject<AgentMessage>(response.data);
   },
 };
