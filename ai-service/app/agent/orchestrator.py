@@ -1634,9 +1634,13 @@ def answer_question(
         )
 
 
+
     else:
 
-        answer_text = answer_draft.answer.strip()
+        answer_text = _format_human_readable_citations(
+            answer_draft.answer,
+            evidence,
+        ).strip()
 
     # ---------------------------------------------------------
     # CONFLICT REPORTING
@@ -1709,6 +1713,112 @@ def _sql_evidence(rows: list[dict]) -> list[dict]:
         )
 
     return evidence
+
+
+def _format_human_readable_citations(
+    answer: str,
+    evidence: list[dict],
+) -> str:
+    """
+    Replace internal evidence IDs in the displayed answer
+    with source filenames and available locations.
+
+    Evidence IDs remain unchanged in the evidence response.
+    """
+
+    evidence_by_id = {
+        item.get("evidence_id"): item
+        for item in evidence
+        if item.get("evidence_id")
+    }
+
+    citation_pattern = re.compile(
+        r"\[((?:(?:SQL|RAG)-\d+)(?:\s*,\s*(?:SQL|RAG)-\d+)*)\]"
+    )
+
+    def resolve_citation(match: re.Match) -> str:
+
+        evidence_ids = re.findall(
+            r"(?:SQL|RAG)-\d+",
+            match.group(1),
+        )
+
+        readable_sources = []
+
+        for evidence_id in evidence_ids:
+
+            item = evidence_by_id.get(evidence_id)
+
+            if not item:
+                logger.warning(
+                    "Unable to resolve citation: %s",
+                    evidence_id,
+                )
+                continue
+
+            reference = item.get("source_reference") or {}
+
+            file_name = reference.get("file_name")
+
+            if not file_name:
+                source_path = reference.get("source_path")
+                if source_path:
+                    file_name = source_path.replace("\\", "/").split("/")[-1]
+
+            if not file_name:
+                logger.warning(
+                    "Source filename missing for citation: %s",
+                    evidence_id,
+                )
+                continue
+
+            source = item.get("source")
+            location = None
+
+            if source == "rag":
+                location = reference.get("page")
+
+                if location is None:
+                    content = item.get("content") or ""
+                    page_match = re.search(
+                        r"\bPage\s+(\d+)\b",
+                        content,
+                        re.IGNORECASE,
+                    )
+
+                    if page_match:
+                        location = page_match.group(1)
+
+                if location is not None:
+                    readable_sources.append(
+                        f"({file_name}, page {location})"
+                    )
+                else:
+                    readable_sources.append(f"({file_name})")
+
+            elif source == "sql":
+                sheet_name = reference.get("sheet_name")
+
+                if sheet_name:
+                    readable_sources.append(
+                        f"({file_name}, sheet {sheet_name})"
+                    )
+                else:
+                    readable_sources.append(f"({file_name})")
+
+            else:
+                readable_sources.append(f"({file_name})")
+
+        if not readable_sources:
+            return "(source details unavailable)"
+
+        # Preserve the order while removing duplicate labels.
+        readable_sources = list(dict.fromkeys(readable_sources))
+
+        return "; ".join(readable_sources)
+
+    return citation_pattern.sub(resolve_citation, answer)
+
 
 
 def _structured_sql_evidence(
