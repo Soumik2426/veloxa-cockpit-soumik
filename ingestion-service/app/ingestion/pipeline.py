@@ -1,3 +1,4 @@
+
 import os
 import logging
 from datetime import datetime, timezone
@@ -8,7 +9,7 @@ import requests
 from dotenv import load_dotenv
 
 from app.database.session import SessionLocal
-from app.ingestion.models import IngestionFile
+from app.ingestion.models import IngestionFile, IngestionJob
 from app.ingestion.services.csv_persistence import CSVPersistenceService
 from app.ingestion.services.excel_persistence import ExcelPersistenceService
 from app.ingestion.services.file_classifier import FileClassificationService
@@ -41,21 +42,12 @@ class UnifiedIngestionPipeline:
 
     @staticmethod
     def _update_document_statuses(documents, results):
-        """
-        Update individual ingestion_file records using AI service results.
-
-        Successful statuses:
-        - processed
-        - skipped_unchanged
-
-        Failure status:
-        - failed
-        """
+        """Update individual document statuses using AI service results."""
 
         result_by_id = {
             str(item.get("file_id")): item
             for item in results
-            if item.get("file_id")
+            if isinstance(item, dict) and item.get("file_id")
         }
 
         db = SessionLocal()
@@ -88,13 +80,11 @@ class UnifiedIngestionPipeline:
                 if result_status in {"processed", "skipped_unchanged"}:
                     record.status = "PROCESSED"
 
-                    # Preserve the original timestamp for unchanged files.
                     if (
                         result_status == "processed"
                         or record.processed_at is None
                     ):
                         record.processed_at = now
-
                 else:
                     record.status = "FAILED"
 
@@ -104,6 +94,71 @@ class UnifiedIngestionPipeline:
             db.rollback()
             logger.exception(
                 "Failed to update individual document ingestion statuses."
+            )
+            raise
+
+        finally:
+            db.close()
+
+    def _update_job_status(self, job_id):
+        """Recalculate job counts and final status from file statuses."""
+
+        db = SessionLocal()
+
+        try:
+            job = (
+                db.query(IngestionJob)
+                .filter(IngestionJob.id == job_id)
+                .first()
+            )
+
+            if job is None:
+                raise ValueError("Ingestion job not found.")
+
+            all_files = (
+                db.query(IngestionFile)
+                .filter(IngestionFile.ingestion_job_id == job_id)
+                .all()
+            )
+
+            processed_count = sum(
+                1 for item in all_files
+                if item.status == "PROCESSED"
+            )
+
+            failed_count = sum(
+                1 for item in all_files
+                if item.status == "FAILED"
+            )
+
+            total_count = len(all_files)
+
+            job.discovered_count = total_count
+            job.processed_count = processed_count
+            job.failed_count = failed_count
+            job.completed_at = datetime.now(timezone.utc)
+
+            if total_count > 0 and processed_count == total_count:
+                job.status = "COMPLETED"
+            elif processed_count == 0 and failed_count == total_count:
+                job.status = "FAILED"
+            else:
+                job.status = "PARTIAL_FAILURE"
+
+            db.commit()
+
+            return {
+                "discovered_count": total_count,
+                "processed_count": processed_count,
+                "failed_count": failed_count,
+                "status": job.status,
+            }
+
+        except Exception:
+            db.rollback()
+            logger.exception(
+                "Failed to update ingestion job status: %s",
+                job_id,
             )
             raise
 
@@ -162,10 +217,6 @@ class UnifiedIngestionPipeline:
         finally:
             db.close()
 
-        # ---------------------------------------------------------
-        # Send only the selected document to the AI service
-        # ---------------------------------------------------------
-
         try:
             response = requests.post(
                 f"{self.ai_service_url}/api/v1/documents/process",
@@ -174,7 +225,6 @@ class UnifiedIngestionPipeline:
             )
 
             response.raise_for_status()
-
             api_result = response.json()
 
             if (
@@ -201,10 +251,6 @@ class UnifiedIngestionPipeline:
                 }
             ]
 
-        # ---------------------------------------------------------
-        # Ensure that the selected document has a result
-        # ---------------------------------------------------------
-
         results_by_id = {
             str(item.get("file_id")): item
             for item in returned_results
@@ -222,20 +268,13 @@ class UnifiedIngestionPipeline:
             )
         ]
 
-        # ---------------------------------------------------------
-        # Update the selected document's database status
-        # ---------------------------------------------------------
-
         self._update_document_statuses(
             [payload_document],
             results,
         )
 
         result = results[0]
-
-        result_status = str(
-            result.get("status", "")
-        ).lower()
+        result_status = str(result.get("status", "")).lower()
 
         return {
             "file_id": str(file_uuid),
@@ -249,8 +288,46 @@ class UnifiedIngestionPipeline:
         }
 
     def run(self, source_id, job_id):
+        """Run structured and unstructured ingestion for a job."""
+
+        # ---------------------------------------------------------
+        # Register and classify files
+        # ---------------------------------------------------------
+
         self.registration_service.register_files(source_id, job_id)
         self.classification_service.classify_files(job_id)
+
+        # ---------------------------------------------------------
+        # Mark job as processing
+        # ---------------------------------------------------------
+
+        db = SessionLocal()
+
+        try:
+            job = (
+                db.query(IngestionJob)
+                .filter(IngestionJob.id == job_id)
+                .first()
+            )
+
+            if job is None:
+                raise ValueError("Ingestion job not found.")
+
+            job.status = "PROCESSING"
+            job.started_at = datetime.now(timezone.utc)
+            job.completed_at = None
+            job.processed_count = 0
+            job.failed_count = 0
+            job.error_message = None
+
+            db.commit()
+
+        except Exception:
+            db.rollback()
+            raise
+
+        finally:
+            db.close()
 
         # ---------------------------------------------------------
         # Structured file processing
@@ -260,6 +337,39 @@ class UnifiedIngestionPipeline:
 
         for file_type, processor in self.structured_processors.items():
             structured_results[file_type] = processor.persist_records(job_id)
+
+        # Mark structured files processed after successful persistence.
+        db = SessionLocal()
+
+        try:
+            structured_files = (
+                db.query(IngestionFile)
+                .filter(
+                    IngestionFile.ingestion_job_id == job_id,
+                    IngestionFile.file_type.in_(["CSV", "EXCEL"]),
+                )
+                .all()
+            )
+
+            now = datetime.now(timezone.utc)
+
+            for record in structured_files:
+                record.status = "PROCESSED"
+
+                if record.processed_at is None:
+                    record.processed_at = now
+
+            db.commit()
+
+        except Exception:
+            db.rollback()
+            logger.exception(
+                "Failed to update structured file statuses."
+            )
+            raise
+
+        finally:
+            db.close()
 
         # ---------------------------------------------------------
         # Prepare unstructured document payload
@@ -292,7 +402,6 @@ class UnifiedIngestionPipeline:
                 ],
             }
 
-            # Mark documents as processing before calling the AI service.
             for item in documents:
                 item.status = "PROCESSING"
 
@@ -302,7 +411,7 @@ class UnifiedIngestionPipeline:
         except Exception:
             db.rollback()
             logger.exception(
-                "Failed to prepare unstructured documents for processing."
+                "Failed to prepare unstructured documents."
             )
             raise
 
@@ -338,7 +447,6 @@ class UnifiedIngestionPipeline:
                 )
 
                 response.raise_for_status()
-
                 api_result = response.json()
 
                 if not isinstance(api_result, dict):
@@ -348,7 +456,6 @@ class UnifiedIngestionPipeline:
 
                 document_result.update(api_result)
 
-                # The API returns per-document outcomes in this list.
                 results = document_result.get("documents", [])
 
                 if not isinstance(results, list):
@@ -361,7 +468,6 @@ class UnifiedIngestionPipeline:
                     "Unstructured document processing request failed."
                 )
 
-                # A request-level failure affects every submitted document.
                 results = [
                     {
                         "file_id": item["file_id"],
@@ -384,7 +490,7 @@ class UnifiedIngestionPipeline:
                 }
 
             # -----------------------------------------------------
-            # Update individual database statuses
+            # Update individual document statuses
             # -----------------------------------------------------
 
             self._update_document_statuses(
@@ -393,20 +499,20 @@ class UnifiedIngestionPipeline:
             )
 
             # -----------------------------------------------------
-            # Recalculate response counts from actual outcomes
+            # Recalculate response counts
             # -----------------------------------------------------
 
             successful_results = [
-                item
-                for item in results
-                if str(item.get("status", "")).lower()
+                item for item in results
+                if isinstance(item, dict)
+                and str(item.get("status", "")).lower()
                 in {"processed", "skipped_unchanged"}
             ]
 
             failed_results = [
-                item
-                for item in results
-                if str(item.get("status", "")).lower()
+                item for item in results
+                if not isinstance(item, dict)
+                or str(item.get("status", "")).lower()
                 not in {"processed", "skipped_unchanged"}
             ]
 
@@ -419,8 +525,7 @@ class UnifiedIngestionPipeline:
             )
 
             document_result["skipped_unchanged"] = sum(
-                1
-                for item in results
+                1 for item in successful_results
                 if str(item.get("status", "")).lower()
                 == "skipped_unchanged"
             )
@@ -429,23 +534,22 @@ class UnifiedIngestionPipeline:
             document_result["documents"] = results
 
         # ---------------------------------------------------------
-        # Determine overall pipeline status
+        # Update final job status and counts
         # ---------------------------------------------------------
 
-        failed_count = len(document_result["failed_documents"])
-        total_documents = len(submitted_documents)
+        job_summary = self._update_job_status(job_id)
 
-        if failed_count == 0:
-            status = "COMPLETED"
-        elif failed_count == total_documents:
-            status = "FAILED"
-        else:
-            status = "PARTIAL_FAILURE"
+        status = job_summary["status"]
+
+        # ---------------------------------------------------------
+        # Return pipeline result
+        # ---------------------------------------------------------
 
         return {
             "source_id": str(source_id),
             "job_id": str(job_id),
             "status": status,
+            "job_summary": job_summary,
             "structured": structured_results,
             "documents": document_result,
         }
