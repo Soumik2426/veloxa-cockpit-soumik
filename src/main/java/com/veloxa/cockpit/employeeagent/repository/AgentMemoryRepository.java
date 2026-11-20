@@ -13,8 +13,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface AgentMemoryRepository
-        extends JpaRepository<AgentMemory, UUID> {
+public interface AgentMemoryRepository extends JpaRepository<AgentMemory, UUID> {
 
     List<AgentMemory> findAllByAgent_IdAndMemoryStatusOrderByCreatedAtDesc(
             UUID agentId,
@@ -44,16 +43,14 @@ public interface AgentMemoryRepository
     SELECT m
     FROM AgentMemory m
     WHERE m.agent.employeeCode = :employeeCode
-      AND m.createdAt <= :asOf
-      AND (m.validFrom IS NULL OR m.validFrom <= :asOf)
-      AND (m.validUntil IS NULL OR m.validUntil > :asOf)
-      AND m.memoryStatus <> :retractedStatus
+      AND m.createdAt < :endExclusive
+      AND m.validFrom < :endExclusive
+      AND (m.validUntil IS NULL OR m.validUntil >= :endExclusive)
     ORDER BY m.createdAt DESC
     """)
     List<AgentMemory> findMemoriesAsOf(
             @Param("employeeCode") String employeeCode,
-            @Param("asOf") OffsetDateTime asOf,
-            @Param("retractedStatus") MemoryStatus retractedStatus
+            @Param("endExclusive") OffsetDateTime endExclusive
     );
 
     List<AgentMemory> findAllByAgent_EmployeeCodeOrderByCreatedAtDesc(

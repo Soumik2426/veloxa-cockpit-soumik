@@ -16,7 +16,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -147,6 +149,53 @@ public class AgentMemoryServiceImpl implements AgentMemoryService {
         memory.retract();
 
         return toResponse(agentMemoryRepository.save(memory));
+    }
+
+    @Override
+    public List<AgentMemoryResponse> getMemoriesAsOf(
+            String employeeCode,
+            LocalDate date
+    ) {
+
+        employeeAgentRepository.findByEmployeeCode(employeeCode)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Employee agent not found: " + employeeCode
+                ));
+
+        if (date == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Historical date is required"
+            );
+        }
+
+        ZoneId companyZone = ZoneId.of("Asia/Kolkata");
+
+        OffsetDateTime endExclusive = date
+                .plusDays(1)
+                .atStartOfDay(companyZone)
+                .toOffsetDateTime();
+
+        return agentMemoryRepository
+                .findMemoriesAsOf(employeeCode, endExclusive)
+                .stream()
+                .map(memory -> new AgentMemoryResponse(
+                        memory.getId(),
+                        memory.getAgent().getEmployeeCode(),
+                        memory.getMemoryType(),
+                        memory.getContent(),
+                        memory.getSourceReferences(),
+                        memory.getConfidence(),
+                        MemoryStatus.ACTIVE,
+                        memory.getSupersedesMemory() != null
+                                ? memory.getSupersedesMemory().getId()
+                                : null,
+                        memory.getValidFrom(),
+                        memory.getValidUntil(),
+                        memory.getCreatedAt()
+                ))
+                .toList();
     }
 
     private AgentMemoryResponse toResponse(AgentMemory memory) {
