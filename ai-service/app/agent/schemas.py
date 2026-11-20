@@ -104,3 +104,26 @@ class AgentResponse(BaseModel):
     evidence: list[dict[str, Any]]
     confidence: ConfidenceAssessment
     limitations: list[str]
+    
+
+class EmployeeMemoryContext(BaseModel):
+    memory_type: Literal["FACT", "PREFERENCE", "COMMITMENT", "ASSUMPTION"]
+    content: str = Field(min_length=1, max_length=4000)
+    source_references: dict[str, Any] = Field(default_factory=dict)
+    confidence: float | None = Field(default=None, ge=0, le=1)
+
+
+class EmployeeAgentContext(BaseModel):
+    employee_code: str = Field(min_length=1, max_length=20)
+    full_name: str = Field(min_length=1, max_length=150)
+    title: str = Field(min_length=1, max_length=150)
+    department: str | None = Field(default=None, max_length=100)
+    persona_config: dict[str, Any] = Field(default_factory=dict)
+    system_context: str | None = Field(default=None, max_length=8000)
+    memories: list[EmployeeMemoryContext] = Field(default_factory=list, max_length=50)
+
+
+class EmployeeAgentRespondRequest(BaseModel):
+    question: str = Field(min_length=1, max_length=2000)
+    employee_context: EmployeeAgentContext
+

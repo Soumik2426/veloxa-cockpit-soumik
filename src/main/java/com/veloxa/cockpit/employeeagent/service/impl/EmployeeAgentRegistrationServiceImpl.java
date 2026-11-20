@@ -126,6 +126,9 @@ public class EmployeeAgentRegistrationServiceImpl
 
             String agentKey = createAgentKey(employeeCode);
 
+            JsonNode employeeData =
+                    sourceRecord.getExtractedData().path("data");
+
             EmployeeAgent existingAgent = existingByCode.get(employeeCode);
 
             if (existingAgent != null) {
@@ -146,6 +149,19 @@ public class EmployeeAgentRegistrationServiceImpl
                     );
                 }
 
+                // Preserve existing persona settings and synchronize
+                // employee information from the source record.
+                Map<String, Object> config =
+                        existingAgent.getPersonaConfig() == null
+                                ? new LinkedHashMap<>()
+                                : new LinkedHashMap<>(
+                                existingAgent.getPersonaConfig()
+                        );
+
+                addEmployeeContext(config, employeeData);
+
+                existingAgent.setPersonaConfig(config);
+
                 alreadyRegisteredCount++;
 
                 registrationItems.add(
@@ -159,6 +175,7 @@ public class EmployeeAgentRegistrationServiceImpl
                 continue;
             }
 
+            // Ensure the agent key is not already assigned.
             if (employeeAgentRepository.existsByAgentKey(agentKey)) {
                 throw new IllegalStateException(
                         "Agent key is already assigned: " + agentKey
@@ -169,7 +186,7 @@ public class EmployeeAgentRegistrationServiceImpl
                     .sourceRecord(sourceRecord)
                     .employeeCode(employeeCode)
                     .agentKey(agentKey)
-                    .personaConfig(createDefaultPersonaConfig())
+                    .personaConfig(createPersonaConfig(employeeData))
                     .enabled(true)
                     .build();
 
@@ -185,6 +202,7 @@ public class EmployeeAgentRegistrationServiceImpl
         }
 
         // Persist all new agents in one transaction.
+        // Existing agents are updated through JPA dirty checking.
         employeeAgentRepository.saveAll(agentsToCreate);
 
         return new EmployeeAgentRegistrationResponse(
@@ -244,7 +262,7 @@ public class EmployeeAgentRegistrationServiceImpl
         return "agent-" + employeeCode.toLowerCase(Locale.ROOT);
     }
 
-    private Map<String, Object> createDefaultPersonaConfig() {
+    private Map<String, Object> createPersonaConfig(JsonNode data) {
 
         Map<String, Object> config = new LinkedHashMap<>();
 
@@ -253,6 +271,20 @@ public class EmployeeAgentRegistrationServiceImpl
         config.put("assumptionsAllowed", true);
         config.put("assumptionsMustBeDisclosed", true);
 
+        addEmployeeContext(config, data);
+
         return config;
+    }
+
+    private void addEmployeeContext(
+            Map<String, Object> config,
+            JsonNode data
+    ) {
+
+        config.put("employeeCode", readText(data, "Emp ID"));
+        config.put("fullName", readText(data, "Full Name"));
+        config.put("designation", readText(data, "Title"));
+        config.put("department", readText(data, "Department"));
+        config.put("employmentStatus", readText(data, "Status"));
     }
 }

@@ -1081,7 +1081,10 @@ def _compact_evidence_for_prompt(
 
 
 
-def answer_question(question: str) -> AgentResponse:
+def answer_question(
+    question: str,
+    employee_context: dict | None = None,
+) -> AgentResponse:
 
     if not question or not question.strip():
         raise ValueError("Question cannot be empty.")
@@ -1493,8 +1496,22 @@ def answer_question(question: str) -> AgentResponse:
             "Some retrieved evidence was shortened or omitted from the model context to stay within provider limits."
         )
 
+    employee_context_text = ""
+
+    if employee_context:
+        employee_context_text = (
+            "EMPLOYEE AGENT CONTEXT\n"
+            "The following information defines the perspective and "
+            "working context of the employee agent answering this question. "
+            "Use it to understand the employee's role and relevant "
+            "preferences, commitments, and assumptions. It is not a "
+            "substitute for retrieved evidence.\n"
+            f"{json.dumps(employee_context, ensure_ascii=False, default=str)}\n\n"
+        )
+
     answer_prompt = (
         f"{ANSWER_PROMPT}\n\n"
+        f"{employee_context_text}"
         f"User question:\n{question}\n\n"
         f"Retrieved evidence:\n"
         f"{json.dumps(prompt_evidence, ensure_ascii=False, separators=(',', ':'), default=str)}\n\n"
@@ -1588,14 +1605,10 @@ def answer_question(question: str) -> AgentResponse:
             "the retrieved evidence."
         )
 
+
     else:
-        # Citations are validated above and remain available in evidence.
-        # Keep the answer field clean for display.
-        answer_text = re.sub(
-            r"\s*\[(?:(?:SQL|RAG)-\d+(?:\s*,\s*)?)+\]",
-            "",
-            answer_draft.answer,
-        ).strip()
+
+        answer_text = answer_draft.answer.strip()
 
     # ---------------------------------------------------------
     # CONFLICT REPORTING
@@ -1815,14 +1828,57 @@ def _confidence(
             ),
         )
 
-    if limitations:
+
+    # A missing result from one retrieval path is non-blocking
+    # when the other retrieval path successfully provides evidence.
+    non_blocking_limitations = set()
+
+    if rag_count > 0:
+        non_blocking_limitations.add(
+            "No matching structured records were found."
+        )
+
+    if sql_count > 0:
+        non_blocking_limitations.add(
+            "No relevant document chunks were found."
+        )
+
+    blocking_limitations = [
+        limitation
+        for limitation in limitations
+        if limitation not in non_blocking_limitations
+    ]
+
+    if blocking_limitations:
         return ConfidenceAssessment(
             level="low",
             rationale=(
-                "One or more retrieval limitations were detected. "
+                "One or more material retrieval limitations were detected. "
                 "The answer may not cover all requested information."
             ),
         )
+
+    if non_blocking_limitations.intersection(limitations):
+        return ConfidenceAssessment(
+            level="moderate",
+            rationale=(
+                "Supporting evidence was retrieved from at least one "
+                "retrieval path, but the other retrieval path did not "
+                "return matching records. The answer relies on the "
+                "available evidence."
+            ),
+        )
+
+    if dependent_lookup_completed:
+        return ConfidenceAssessment(
+            level="high",
+            rationale=(
+                "The employee record and the referenced manager record "
+                "were both retrieved successfully. The answer citations "
+                "were validated, with no reported conflicts or limitations."
+            ),
+        )
+
 
     if dependent_lookup_completed:
         return ConfidenceAssessment(

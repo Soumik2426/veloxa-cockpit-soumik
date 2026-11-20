@@ -1,70 +1,79 @@
 
 package com.veloxa.cockpit.employeeagent.entity;
 
-import java.time.OffsetDateTime;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
 import com.veloxa.cockpit.employeeagent.enums.MessageRole;
-
 import jakarta.persistence.*;
-
-import org.hibernate.annotations.CreationTimestamp;
+import lombok.Getter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import java.time.OffsetDateTime;
+import java.util.Map;
+import java.util.UUID;
 
 @Entity
-@Table(
-        name = "agent_messages",
-        indexes = {
-                @Index(
-                        name = "idx_agent_messages_conversation_created",
-                        columnList = "conversation_id, created_at, id"
-                )
-        }
-)
+@Table(name = "agent_messages")
 @Getter
-@Setter
-@Builder
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor(access = AccessLevel.PACKAGE)
 public class AgentMessage {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "conversation_id", nullable = false, updatable = false)
+    @JoinColumn(name = "conversation_id", nullable = false)
     private AgentConversation conversation;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "role", nullable = false, length = 20)
+    @Column(nullable = false, length = 20)
     private MessageRole role;
 
-    @Column(name = "content", nullable = false, columnDefinition = "TEXT")
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    @Builder.Default
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "citations", nullable = false, columnDefinition = "jsonb")
-    private Map<String, Object> citations = new HashMap<>();
+    @Column(columnDefinition = "jsonb")
+    private Map<String, Object> citations;
 
-    @Builder.Default
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "metadata", nullable = false, columnDefinition = "jsonb")
-    private Map<String, Object> metadata = new HashMap<>();
+    @Column(columnDefinition = "jsonb")
+    private Map<String, Object> metadata;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(nullable = false, updatable = false)
     private OffsetDateTime createdAt;
+
+    protected AgentMessage() {
+        // Required by JPA
+    }
+
+    private AgentMessage(
+            AgentConversation conversation,
+            MessageRole role,
+            String content,
+            Map<String, Object> citations,
+            Map<String, Object> metadata
+    ) {
+        this.conversation = conversation;
+        this.role = role;
+        this.content = content;
+        this.citations = citations;
+        this.metadata = metadata;
+        this.createdAt = OffsetDateTime.now();
+    }
+
+    public static AgentMessage create(
+            AgentConversation conversation,
+            MessageRole role,
+            String content,
+            Map<String, Object> citations,
+            Map<String, Object> metadata
+    ) {
+        return new AgentMessage(
+                conversation,
+                role,
+                content,
+                citations,
+                metadata
+        );
+    }
 }

@@ -1,3 +1,4 @@
+from app.agent.employee_agent_api import employee_agent_router
 import logging
 import time
 from typing import Literal
@@ -30,6 +31,7 @@ logger.setLevel(logging.DEBUG)
 # --------------------------------------------------
 
 app = FastAPI(title="Veloxa AI Service")
+app.include_router(employee_agent_router)
 
 
 # --------------------------------------------------

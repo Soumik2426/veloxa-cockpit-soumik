@@ -327,7 +327,7 @@ class TestSQLTool(unittest.TestCase):
                 "Story Points",
                 "Story Points",
                 "Jira_Export_ATLAS.xlsx",
-                "Issues:%",
+                "Issues",
                 "Type",
                 "Story",
             ),
@@ -362,7 +362,7 @@ class TestSQLTool(unittest.TestCase):
             (
                 "Status",
                 "Jira_Export_ATLAS.xlsx",
-                "Issues:%",
+                "Issues",
                 "Status",
                 "To Do",
                 "In Progress",
@@ -416,14 +416,9 @@ class TestSQLTool(unittest.TestCase):
             params,
             (
                 "Employee_Master.xlsx",
-                "Employees:%",
+                "Employees",
             ),
         )
-
-
-if __name__ == "__main__":
-    unittest.main()
-
 
     def test_between_filter_generates_parameterized_range(self):
         with patch(
@@ -447,3 +442,8 @@ if __name__ == "__main__":
         self.assertIn("BETWEEN %s AND %s", query)
         self.assertIn("2026-04-01", params)
         self.assertIn("2026-09-30", params)
+
+
+
+if __name__ == "__main__":
+    unittest.main()

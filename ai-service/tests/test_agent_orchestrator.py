@@ -8,6 +8,7 @@ from pydantic import ValidationError
 from app.agent.orchestrator import (
     GeminiServiceError,
     answer_question,
+    _confidence,
 )
 from app.agent.schemas import AgentAskRequest, AnswerDraft, RetrievalPlan
 from app.api import DocumentBatch, ask_agent, process_documents
@@ -377,9 +378,90 @@ class AgentOrchestratorTests(unittest.TestCase):
         self.assertEqual(response["failed_documents"], [])
 
 
-if __name__ == "__main__":
-    unittest.main()
+    def test_confidence_is_high_with_sql_and_rag_evidence(self):
+        result = _confidence(
+            sql_count=1,
+            rag_count=2,
+            conflicts=[],
+            limitations=[],
+        )
 
+        self.assertEqual(result.level, "high")
+
+    def test_confidence_is_moderate_with_rag_only_and_no_limitations(self):
+        result = _confidence(
+            sql_count=0,
+            rag_count=2,
+            conflicts=[],
+            limitations=[],
+        )
+
+        self.assertEqual(result.level, "moderate")
+
+    def test_confidence_is_moderate_when_sql_has_no_matching_records(self):
+        result = _confidence(
+            sql_count=0,
+            rag_count=2,
+            conflicts=[],
+            limitations=[
+                "No matching structured records were found."
+            ],
+        )
+
+        self.assertEqual(result.level, "moderate")
+        self.assertIn(
+            "available evidence",
+            result.rationale.lower(),
+        )
+
+    def test_confidence_is_moderate_when_rag_has_no_relevant_chunks(self):
+        result = _confidence(
+            sql_count=2,
+            rag_count=0,
+            conflicts=[],
+            limitations=[
+                "No relevant document chunks were found."
+            ],
+        )
+
+        self.assertEqual(result.level, "moderate")
+        self.assertIn(
+            "available evidence",
+            result.rationale.lower(),
+        )
+
+    def test_confidence_is_low_when_citation_validation_fails(self):
+        result = _confidence(
+            sql_count=2,
+            rag_count=2,
+            conflicts=[],
+            limitations=[],
+            citation_validation_failed=True,
+        )
+
+        self.assertEqual(result.level, "low")
+
+    def test_confidence_is_low_when_evidence_conflicts(self):
+        result = _confidence(
+            sql_count=1,
+            rag_count=1,
+            conflicts=["Conflicting delivery dates"],
+            limitations=[],
+        )
+
+        self.assertEqual(result.level, "low")
+
+    def test_confidence_is_low_when_material_retrieval_fails(self):
+        result = _confidence(
+            sql_count=0,
+            rag_count=2,
+            conflicts=[],
+            limitations=[
+                "Structured record retrieval was unavailable."
+            ],
+        )
+
+        self.assertEqual(result.level, "low")
 
     def test_planner_normalizes_common_aggregation_aliases_and_null_limits(self):
         from app.agent.orchestrator import _normalize_retrieval_plan
@@ -455,3 +537,9 @@ if __name__ == "__main__":
         self.assertTrue(truncated)
         self.assertLessEqual(len(str(compact)), 4000)
         self.assertEqual(compact[0]["evidence_id"], "RAG-1")
+
+
+
+
+if __name__ == "__main__":
+    unittest.main()
