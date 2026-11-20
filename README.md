@@ -111,41 +111,80 @@ veloxa-cockpit/
 
 ### Prerequisites
 
+- Git
 - Java 25 and Maven
 - Python 3.10+
 - Node.js and npm
-- Docker and Docker Compose
+- Docker and Docker Compose (for the local PostgreSQL database)
 - An API key for the configured language model provider
 
-### 1. Configure the environment
-
-Copy the example configuration for each service and fill in your own values (database credentials, model provider key, input directory). **Never commit secrets.**
-
-### 2. Start PostgreSQL
+### 1. Clone the repository
 
 ```bash
-docker compose up -d
+git clone https://github.com/Soumik2426/veloxa-cockpit-soumik.git
+cd veloxa-cockpit-soumik
 ```
 
-### 3. Run the ingestion service
+### 2. Configure the database connection
 
-Place the supplied source files in your local input directory, then run the ingestion pipeline from `ingestion-service/`.
+The database must be configured in **all three** backend components, using the same PostgreSQL connection details (host, port, database name, username, password):
 
-### 4. Start the AI service
+| Component | Where to configure |
+|---|---|
+| `ingestion-service` | Its local configuration / environment file |
+| `ai-service` | Its local configuration / environment file |
+| Spring Boot backend | `src/main/resources/application.yml` |
+
+Also add your language model provider key to the `ai-service` configuration. **Never commit credentials or API keys.**
+
+Make sure PostgreSQL is running before the next step (for example, `docker compose up -d`).
+
+### 3. Run the ingestion pipeline
+
+Create a virtual environment inside `ingestion-service`, install its requirements, and run `pipeline.py`. This automatically populates the database with the supplied company data.
+
+```bash
+cd ingestion-service
+
+# Create and activate a virtual environment
+python -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Start the pipeline
+python pipeline.py
+```
+
+Wait for the pipeline to finish before starting the other services.
+
+### 4. Start the AI service (FastAPI)
+
+Use a separate virtual environment inside `ai-service`.
 
 ```bash
 cd ai-service
+
+python -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
+
 pip install -r requirements.txt
+
 uvicorn app.main:app --port 8000
 ```
 
-### 5. Start the backend
+### 5. Start the Spring Boot backend
+
+From the repository root, in a new terminal:
 
 ```bash
 mvn spring-boot:run
 ```
 
 ### 6. Start the frontend
+
+In another terminal:
 
 ```bash
 cd frontend
