@@ -5,6 +5,171 @@
   background: #f6f7f9;
 }
 
+.voice-notes-summary,
+.data-source-count {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.voice-notes-summary {
+  background: #f3f5f7;
+  border: 1px solid #dfe4e8;
+  border-radius: 10px;
+  color: #53606b;
+  padding: 10px 14px;
+}
+
+.voice-notes-list {
+  display: grid;
+  gap: 18px;
+}
+
+.voice-note-card,
+.data-source-card {
+  background: #fff;
+  border: 1px solid #dfe4e8;
+  border-radius: 14px;
+  padding: 22px;
+}
+
+.voice-note-card-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+}
+
+.voice-note-id {
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+
+.voice-note-card h2 {
+  font-size: 19px;
+  margin: 7px 0 5px;
+}
+
+.voice-note-date,
+.voice-note-source,
+.data-source-details span {
+  color: #53606b;
+  font-size: 12px;
+}
+
+.voice-note-status {
+  align-items: center;
+  border-radius: 999px;
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  gap: 6px;
+  padding: 7px 10px;
+}
+
+.voice-note-status-implemented {
+  background: #e8f7ef;
+  color: #167447;
+}
+
+.voice-note-status-pushback {
+  background: #fff4e5;
+  color: #9a5b00;
+}
+
+.voice-note-section,
+.voice-note-outcome {
+  border-top: 1px solid #dfe4e8;
+  margin-top: 18px;
+  padding-top: 16px;
+}
+
+.voice-note-section h3,
+.voice-note-outcome h3 {
+  font-size: 13px;
+  margin: 0 0 9px;
+  text-transform: uppercase;
+}
+
+.voice-note-transcript {
+  color: #53606b;
+  line-height: 1.6;
+}
+
+.voice-note-source {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+}
+
+.data-source-toolbar {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.data-source-toolbar label {
+  align-items: center;
+  border: 1px solid #dfe4e8;
+  border-radius: 8px;
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  padding: 9px 12px;
+}
+
+.data-source-toolbar input,
+.data-source-toolbar select {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  outline: 0;
+}
+
+.data-source-toolbar input {
+  width: 100%;
+}
+
+.data-source-count {
+  color: #53606b;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.data-source-list {
+  display: grid;
+}
+
+.data-source-row {
+  align-items: center;
+  border-top: 1px solid #edf0f2;
+  display: flex;
+  gap: 12px;
+  padding: 13px 0;
+}
+
+.data-source-icon {
+  align-items: center;
+  background: #eef4ff;
+  border-radius: 8px;
+  color: #2563eb;
+  display: flex;
+  height: 34px;
+  justify-content: center;
+  width: 34px;
+}
+
+.data-source-details {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+}
+
 .app-shell-collapsed {
   --sidebar-width: 76px;
 }
@@ -295,42 +460,84 @@ main {
   font-size: 11px;
 }
 
-.metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.metric-card {
-  min-height: 143px;
-  padding: 19px;
+.workspace-summary {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  min-height: 116px;
+  padding: 20px 22px;
   border: 1px solid #e8ebef;
   border-radius: 10px;
   background: #fff;
 }
 
-.metric-top {
+.workspace-summary-main {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  color: #7b8798;
-  font-size: 12px;
+  flex: 1;
+  gap: 14px;
 }
 
-.metric-top svg {
-  color: #8296b0;
+.workspace-summary-icon {
+  width: 43px;
+  height: 43px;
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 10px;
+  color: #416b9f;
+  background: #edf3fa;
 }
 
-.metric-value {
-  margin-top: 16px;
-  color: #1b293d;
-  font: 700 27px 'Manrope', sans-serif;
+.workspace-summary-eyebrow {
+  margin-bottom: 4px;
+  color: #8492a5;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
 }
 
-.metric-card p {
-  margin-top: 5px;
-  color: #98a2b0;
+.workspace-summary h2 {
+  margin: 0;
+  color: #273449;
+  font: 700 16px 'Manrope', sans-serif;
+}
+
+.workspace-summary-main p {
+  margin: 5px 0 0;
+  color: #8994a4;
+  font-size: 11px;
+}
+
+.workspace-summary-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 154px;
+  padding-left: 24px;
+  border-left: 1px solid #e8ebef;
+  color: #8492a5;
   font-size: 10px;
+  white-space: nowrap;
+}
+
+.workspace-summary-stat strong {
+  color: #1b293d;
+  font: 700 29px 'Manrope', sans-serif;
+}
+
+.workspace-summary-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  color: #416b9f;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.workspace-summary-link:hover {
+  color: #2f5d96;
 }
 
 .section-block {
@@ -658,10 +865,6 @@ main {
 }
 
 @media (max-width: 1100px) {
-  .metrics-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .agents-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -730,21 +933,19 @@ main {
     display: none;
   }
 
-  .metrics-grid {
-    gap: 10px;
+  .workspace-summary {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 16px;
   }
 
-  .metric-card {
-    min-height: 130px;
-    padding: 13px;
+  .workspace-summary-main {
+    min-width: 100%;
   }
 
-  .metric-top {
-    font-size: 10px;
-  }
-
-  .metric-value {
-    font-size: 23px;
+  .workspace-summary-stat {
+    padding-left: 0;
+    border-left: 0;
   }
 
   .shortcut-grid,
@@ -1383,21 +1584,6 @@ main {
   font-size: 10px;
 }
 
-.historical-date-control {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.historical-date-control input {
-  padding: 4px 7px;
-  border: 1px solid #e5e9ef;
-  border-radius: 5px;
-  color: #62748c;
-  background: #fff;
-  font-size: 10px;
-}
-
 .chat-error {
   margin-top: 10px;
 }
@@ -2026,6 +2212,25 @@ main {
   background: #fafbfd;
   font-size: 10px;
   line-height: 1.6;
+}
+
+.company-chat-evidence-item,
+.citation-item {
+  display: grid;
+  gap: 3px;
+}
+
+.company-chat-evidence-item strong,
+.citation-item strong {
+  color: #344257;
+  font-size: 12px;
+}
+
+.company-chat-evidence-item span,
+.citation-item span,
+.company-chat-evidence-item small,
+.citation-item small {
+  color: #65758a;
 }
 
 .company-chat-composer {

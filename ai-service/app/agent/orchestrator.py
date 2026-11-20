@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import re
+from difflib import SequenceMatcher
 
 from google.genai import types
 from groq import Groq
@@ -226,8 +227,9 @@ ANSWER QUALITY
    explain the timing rather than silently treating them as simultaneous.
 
 EVIDENCE AND SAFETY
-9. Every factual claim must cite one or more exact evidence IDs from the supplied
-   evidence, using [SQL-1], [RAG-1] or [SQL-1, RAG-1].
+9. Every factual claim must cite one or more exact evidence IDs when it uses
+   company or document information, using [SQL-1], [RAG-1], [PROFILE-1] or
+   combinations such as [SQL-1, PROFILE-1]. Profile claims may cite PROFILE-1.
 10. Never invent, alter or guess evidence IDs, facts, figures, names or dates.
 11. Use SQL evidence for exact structured values and calculations; use RAG
     evidence for statements, explanations and documentary context. Combine them
@@ -268,6 +270,13 @@ EVIDENCE SUFFICIENCY AND ATTRIBUTION
 
 22. Add a limitation whenever the evidence does not establish the requested
     conclusion, even if retrieval and citation validation succeeded.
+23. Use canonical employee names from Employee_Master.xlsx whenever an
+    authoritative employee record is present. If a transcript contains a
+    spelling such as "Pria" but the employee record establishes "Priya Nair",
+    use "Priya Nair" in the answer and explain the source discrepancy when it
+    affects the conclusion.
+24. Keep the answer concise. Put source details only in the separate evidence
+    response metadata; do not place filenames in the middle of prose.
 
 
 Return only valid JSON matching AnswerDraft with these fields:
@@ -1157,6 +1166,330 @@ def _compact_evidence_for_prompt(
     return compact, truncated_any
 
 
+def _classify_employee_question(
+    question: str,
+    employee_context: dict | None = None,
+) -> str:
+    """Choose profile, mixed, or company retrieval for an employee agent."""
+    normalized = re.sub(r"\s+", " ", question.casefold()).strip()
+
+    company_terms = (
+        "company",
+        "veloxa",
+        "product",
+        "customer",
+        "objective",
+        "challenge",
+        "situation",
+        "technical",
+        "engineering",
+        "infrastructure",
+        "incident",
+        "atlas",
+        "department",
+        "finance",
+        "marketing",
+        "people",
+        "operations",
+        "revenue",
+        "budget",
+        "risk",
+        "blocker",
+    )
+    has_company_context = any(term in normalized for term in company_terms)
+
+    personal_patterns = (
+        r"\bwho are you\b",
+        r"\btell me about yourself\b",
+        r"\bwhat(?:'s| is) your (?:name|designation|title|role)\b",
+        r"\bwhich department do you work in\b",
+        r"\bwhat department do you work in\b",
+        r"\bwho is your manager\b",
+        r"\bwho do you report to\b",
+        r"\bwhat are your responsibil",
+        r"\bwhat type of work do you\b",
+        r"\bwhat kind of work do you\b",
+        r"\bwhat do you do\b",
+        r"\bwhat are you (?:currently )?working on\b",
+        r"\bwhat projects are you\b",
+        r"\bwhat projects am i\b",
+        r"\byour professional background\b",
+        r"\byour experience\b",
+        r"\byour strengths?\b",
+        r"\bwho do you work with\b",
+        r"\byour role in\b",
+        r"\byour department (?:contribute|interact|affect)\b",
+    )
+    has_personal_intent = any(
+        re.search(pattern, normalized)
+        for pattern in personal_patterns
+    )
+
+    generic_follow_up = bool(
+        re.search(
+            r"\b(?:can you )?(?:elaborate|expand)\b"
+            r"|\btell me more\b"
+            r"|\bwhat else do you do\b"
+            r"|\bcan you give me an example\b",
+            normalized,
+        )
+    )
+    if not generic_follow_up:
+        generic_follow_up = bool(
+            re.search(r"\b(?:more|else)\b", normalized)
+            and re.search(r"\b(?:you|your|yourself)\b", normalized)
+        )
+
+    if generic_follow_up and employee_context:
+        history = employee_context.get("conversation_history") or []
+        prior_text = " ".join(
+            str(item.get("content", ""))
+            for item in history
+            if isinstance(item, dict)
+            and str(item.get("role", "")).casefold() == "user"
+        ).casefold()
+        prior_company_context = any(
+            term in prior_text
+            for term in company_terms
+        )
+        if prior_company_context and not has_personal_intent:
+            return "company"
+
+    if has_personal_intent:
+        return "mixed" if has_company_context else "profile"
+
+    if generic_follow_up:
+        return "profile"
+
+    return "company"
+
+
+def _employee_profile_evidence(employee_context: dict) -> dict:
+    """Expose the verified employee context as traceable internal evidence."""
+    return {
+        "evidence_id": "PROFILE-1",
+        "source": "profile",
+        "source_reference": {
+            "file_name": "Employee_Master.xlsx",
+            "sheet_name": "Employees",
+            "employee_code": employee_context.get("employee_code"),
+        },
+        "content": {
+            "employee_code": employee_context.get("employee_code"),
+            "full_name": employee_context.get("full_name"),
+            "title": employee_context.get("title"),
+            "department": employee_context.get("department"),
+            "manager": employee_context.get("manager"),
+            "responsibilities": employee_context.get("responsibilities", []),
+            "professional_background": employee_context.get(
+                "professional_background"
+            ),
+            "relevant_colleagues": employee_context.get(
+                "relevant_colleagues",
+                [],
+            ),
+        },
+    }
+
+
+def _answer_employee_profile(
+    question: str,
+    employee_context: dict,
+) -> AgentResponse:
+    """Answer employee-profile questions from the selected agent context."""
+    name = str(employee_context.get("full_name") or "This employee")
+    title = str(employee_context.get("title") or "an employee")
+    department = employee_context.get("department") or "an unrecorded department"
+    normalized = question.casefold()
+    limitations: list[str] = []
+    responsibilities = [
+        str(item)
+        for item in employee_context.get("responsibilities") or []
+        if str(item).strip()
+    ]
+    background = str(
+        employee_context.get("professional_background") or ""
+    ).strip()
+    colleagues = [
+        item
+        for item in employee_context.get("relevant_colleagues") or []
+        if isinstance(item, dict) and item.get("full_name")
+    ]
+    has_previous_turn = bool(employee_context.get("conversation_history"))
+
+    asks_manager = "manager" in normalized or "report" in normalized
+    asks_colleagues = (
+        "colleague" in normalized
+        or "work with" in normalized
+    )
+    asks_background = any(
+        term in normalized
+        for term in ("background", "experience", "strength")
+    )
+    asks_work = any(
+        term in normalized
+        for term in (
+            "responsibil",
+            "handle",
+            "what do you do",
+            "work",
+            "project",
+            "currently",
+            "role",
+        )
+    )
+    asks_follow_up = any(
+        term in normalized
+        for term in ("more", "else", "elaborate", "example")
+    )
+
+    if asks_manager:
+        manager = employee_context.get("manager")
+        if isinstance(manager, dict) and manager.get("full_name"):
+            answer = (
+                f"I report to {manager['full_name']}"
+                f"{' (' + str(manager['title']) + ')' if manager.get('title') else ''}."
+            )
+        else:
+            answer = (
+                "My employee profile does not contain a resolved manager record."
+            )
+            limitations.append(
+                "The authoritative employee profile did not resolve a manager."
+            )
+    elif asks_colleagues:
+        if colleagues:
+            colleague_names = [
+                str(item["full_name"])
+                + (
+                    f" ({item['title']})"
+                    if item.get("title")
+                    else ""
+                )
+                for item in colleagues
+            ]
+            answer = "I work with " + ", ".join(colleague_names) + "."
+        else:
+            answer = (
+                f"I am {name}, {title} in {department}. "
+                "My profile does not list specific colleagues."
+            )
+            limitations.append(
+                "The authoritative employee profile does not list specific colleagues."
+            )
+    elif asks_background:
+        if background:
+            answer = background
+        elif responsibilities:
+            answer = (
+                f"I am {name}, {title} in {department}. "
+                "My recorded responsibilities are: "
+                + "; ".join(responsibilities)
+                + "."
+            )
+            limitations.append(
+                "A separate professional-background description is not recorded."
+            )
+        else:
+            answer = (
+                f"I am {name}, {title} in {department}. "
+                "The available employee profile does not include further "
+                "professional-background details."
+            )
+            limitations.append(
+                "The authoritative employee profile does not include professional-background details."
+            )
+    elif asks_work:
+        if responsibilities:
+            answer = "My recorded responsibilities are: " + "; ".join(
+                responsibilities
+            ) + "."
+        else:
+            answer = (
+                f"I am {name}, {title} in {department}. "
+                "My verified profile "
+                "lists me in this role, "
+                "but it does not include a formal responsibility or project list."
+            )
+            limitations.append(
+                "The authoritative employee profile does not record formal responsibilities or projects."
+            )
+    elif asks_follow_up and has_previous_turn:
+        if background:
+            answer = (
+                "Beyond my initial introduction, my professional background "
+                "includes: " + background
+            )
+        elif responsibilities:
+            answer = (
+                "Beyond my initial introduction, I handle: "
+                + "; ".join(responsibilities)
+                + "."
+            )
+        elif colleagues:
+            answer = (
+                "Beyond my initial introduction, I work with "
+                + ", ".join(str(item["full_name"]) for item in colleagues)
+                + "."
+            )
+        else:
+            answer = (
+                "I can elaborate on my role, but the available employee "
+                "profile does not contain additional verified professional details."
+            )
+            limitations.append(
+                "The authoritative employee profile does not contain additional professional details."
+            )
+    elif "name" in normalized:
+        answer = f"My name is {name}, and I am a {title} in {department}."
+    elif "department" in normalized:
+        answer = f"I work in {department} as a {title}."
+    else:
+        answer = f"I am {name}, {title} in {department}."
+
+    return AgentResponse(
+        question=question,
+        answer=answer,
+        retrieval_sources=["profile"],
+        evidence=[_employee_profile_evidence(employee_context)],
+        confidence=ConfidenceAssessment(
+            level="high",
+            rationale="The response uses the selected employee's authoritative profile.",
+        ),
+        limitations=limitations,
+    )
+
+
+def _employee_work_context_missing(
+    question: str,
+    employee_context: dict,
+) -> bool:
+    """Identify work questions that need company-record retrieval."""
+    normalized = question.casefold()
+    work_terms = (
+        "responsibil",
+        "handle",
+        "what do you do",
+        "project",
+        "work on",
+        "working on",
+    )
+    asks_work = any(term in normalized for term in work_terms)
+    asks_relationship = (
+        "manager" in normalized
+        or "report" in normalized
+        or "colleague" in normalized
+        or "work with" in normalized
+        or "department" in normalized
+    )
+    has_profile_detail = bool(
+        employee_context.get("responsibilities")
+        or employee_context.get("professional_background")
+        or employee_context.get("department_context")
+    )
+    return asks_work and not asks_relationship and not has_profile_detail
+
+
 
 def answer_question(
     question: str,
@@ -1166,10 +1499,37 @@ def answer_question(
     if not question or not question.strip():
         raise ValueError("Question cannot be empty.")
 
-    plan = _plan(question)
+    employee_question_type = (
+        _classify_employee_question(question, employee_context)
+        if employee_context
+        else "company"
+    )
+
+    if employee_question_type == "profile":
+        if not _employee_work_context_missing(
+            question,
+            employee_context or {},
+        ):
+            return _answer_employee_profile(question, employee_context or {})
+        employee_question_type = "work"
+
+    retrieval_question = question
+
+    if employee_question_type == "work" and employee_context:
+        retrieval_question = (
+            f"{question}\n"
+            "The question refers to this selected employee only: "
+            f"{employee_context.get('full_name')} "
+            f"(Employee ID {employee_context.get('employee_code')})."
+        )
+
+    plan = _plan(retrieval_question)
 
     evidence = []
     limitations = []
+
+    if employee_question_type in {"mixed", "work"} and employee_context:
+        evidence.append(_employee_profile_evidence(employee_context))
 
     historical_date = (
         employee_context.get("as_of_date")
@@ -1540,7 +1900,26 @@ def answer_question(
     # NO EVIDENCE
     # ---------------------------------------------------------
 
+    if (
+        employee_question_type == "work"
+        and employee_context
+        and sql_count == 0
+        and rag_count == 0
+    ):
+        fallback = _answer_employee_profile(
+            question,
+            employee_context,
+        )
+        fallback.limitations = list(
+            dict.fromkeys(
+                fallback.limitations
+                + ["No supporting company records were found for this work question."]
+            )
+        )
+        return fallback
+
     if not evidence:
+
         retrieval_failed = any(
             limitation in {
                 "Structured record retrieval was unavailable.",
@@ -1714,10 +2093,16 @@ def answer_question(
 
     else:
 
-        answer_text = _format_human_readable_citations(
+        answer_text = _clean_user_answer(
             answer_draft.answer,
             evidence,
-        ).strip()
+        )
+
+        answer_text, name_discrepancies = _canonicalize_employee_names(
+            answer_text,
+            evidence,
+        )
+        limitations.extend(name_discrepancies)
 
     # ---------------------------------------------------------
     # CONFLICT REPORTING
@@ -1897,6 +2282,96 @@ def _format_human_readable_citations(
     return citation_pattern.sub(resolve_citation, answer)
 
 
+def _canonicalize_employee_names(
+    answer: str,
+    evidence: list[dict],
+) -> tuple[str, list[str]]:
+    """Correct a uniquely supported name variant without changing source text."""
+    canonical_names: list[str] = []
+    evidence_text = []
+
+    for item in evidence:
+        content = item.get("content")
+        if isinstance(content, dict):
+            rows = content.get("results") or []
+            for row in rows:
+                data = row.get("extracted_data", {})
+                if isinstance(data, dict):
+                    employee_data = data.get("data", data)
+                    if isinstance(employee_data, dict):
+                        name = employee_data.get("Full Name")
+                        if isinstance(name, str) and name.strip():
+                            canonical_names.append(name.strip())
+                evidence_text.append(json.dumps(row, ensure_ascii=False, default=str))
+        elif isinstance(content, str):
+            evidence_text.append(content)
+
+    corrected = answer
+    discrepancies: list[str] = []
+    searchable_text = " ".join(evidence_text)
+
+    for canonical in dict.fromkeys(canonical_names):
+        first_name = canonical.split()[0]
+        candidates = set(
+            re.findall(r"\b[A-Za-z][A-Za-z'-]{2,}\b", searchable_text)
+        )
+        variants = [
+            candidate
+            for candidate in candidates
+            if candidate.casefold() != first_name.casefold()
+            and SequenceMatcher(
+                None,
+                candidate.casefold(),
+                first_name.casefold(),
+            ).ratio() >= 0.78
+        ]
+        if len(variants) != 1:
+            continue
+
+        variant = variants[0]
+        if re.search(rf"\b{re.escape(variant)}\b", corrected, re.IGNORECASE):
+            corrected = re.sub(
+                rf"\b{re.escape(variant)}\b",
+                canonical,
+                corrected,
+                flags=re.IGNORECASE,
+            )
+            discrepancies.append(
+                f"The answer uses the canonical employee name {canonical}; "
+                f"a retrieved source contains the variant {variant}."
+            )
+
+    return corrected, discrepancies
+
+
+def _clean_user_answer(answer: str, evidence: list[dict]) -> str:
+    """Keep internal citations and source metadata out of user-facing prose."""
+    cleaned = re.sub(
+        r"\[(?:(?:SQL|RAG|PROFILE)-\d+(?:\s*,\s*)?)+\]",
+        "",
+        answer,
+    )
+
+    for item in evidence:
+        reference = item.get("source_reference") or {}
+        file_name = reference.get("file_name") or reference.get("source_file")
+        if isinstance(file_name, str) and file_name.strip():
+            cleaned = re.sub(
+                rf"\b{re.escape(file_name.strip())}\b",
+                "",
+                cleaned,
+                flags=re.IGNORECASE,
+            )
+
+    cleaned = re.sub(r"\*\*|__|`", "", cleaned)
+    cleaned = re.sub(r"^\s*#{1,6}\s*", "", cleaned, flags=re.MULTILINE)
+    cleaned = re.sub(r"^\s*[-*]\s+", "• ", cleaned, flags=re.MULTILINE)
+    cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
+    cleaned = re.sub(r" ?([,.;:])", r"\1", cleaned)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+    return cleaned.strip()
+
+
 
 def _structured_sql_evidence(
     result: dict,
@@ -2002,7 +2477,7 @@ def _validate_citations(
 
         for reference in references:
             if not re.fullmatch(
-                r"(?:SQL|RAG)-\d+",
+                r"(?:SQL|RAG|PROFILE)-\d+",
                 reference,
             ):
                 invalid_citations.append(reference)

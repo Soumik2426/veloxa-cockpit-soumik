@@ -93,6 +93,11 @@ The frontend communicates with the Java backend through REST APIs.
 
 It does not directly access PostgreSQL or independently perform business-data processing.
 
+The Data Sources page uses the backend's indexed-file API to list the original
+assessment files and opens the corresponding source content through the
+backend. The employee conversation page uses the same shared interface for all
+14 agents and preserves the message, evidence, and character-count workflow.
+
 ## 2.2 Core Backend
 
 **Java 25 + Spring Boot 3.5.16**
@@ -105,7 +110,7 @@ It is responsible for:
 - Managing company-related entities.
 - Handling database operations.
 - Managing application-level business rules.
-- Coordinating ingestion and AI-related workflows.
+- Coordinating AI-related and application workflows.
 - Managing employee-agent information and conversations.
 - Providing risk-related functionality.
 - Returning structured responses to the frontend.
@@ -162,7 +167,10 @@ The ingestion service is designed to process multiple source formats through a c
 
 The application follows a multi-service architecture with PostgreSQL acting as the shared persistence layer.
 
-The frontend communicates with the Spring Boot backend. The backend coordinates application functionality and communicates with the AI and ingestion-related components where required.
+The frontend communicates with the Spring Boot backend. The backend coordinates
+application functionality and communicates with the AI service. The ingestion
+service runs its own pipeline and writes ingestion results to PostgreSQL for
+the other services to consume.
 
 ```text
                          CEO / Executive
@@ -470,6 +478,7 @@ The database contains different categories of information.
 | Ingestion tracking | Record pipeline runs and file-processing results |
 | Operational records | Store relevant engineering, incident and business information |
 | Agent information | Support employee-agent context and conversations |
+| Risk assessment snapshots | Persist daily risk results, status, timestamps, data watermark and evidence-bearing response |
 | Evaluation records | Support testing and evaluation of AI responses |
 
 The exact table structure is determined by the implemented database entities and source-data requirements.
@@ -624,6 +633,26 @@ A question about the reason for a delayed engineering release may require:
 
 The system should combine the relevant evidence before preparing the response.
 
+### Employee-Agent Question Routing
+
+Employee-agent questions are classified before retrieval:
+
+- Profile-only identity questions use the selected agent's verified context
+  and the internal `PROFILE-1` evidence item without requiring SQL/RAG
+  citation generation.
+- Employee work questions use the profile when it contains the requested
+  detail. If responsibilities, projects, or background are absent, retrieval
+  is scoped with the selected employee's canonical name and Employee ID.
+- Company, technical, departmental, and cross-department questions use the
+  shared SQL/RAG/hybrid retrieval path.
+- Mixed questions retain profile evidence and combine it with company
+  evidence.
+
+Generic follow-ups use recent user conversation history to distinguish a
+company follow-up from a personal employee follow-up. If no supporting work
+records are found, the agent returns a natural limitation rather than an
+identity introduction or citation-validation error.
+
 ## 8.3 Document Chunking and Embeddings
 
 Long documents cannot always be passed to the language model as one complete piece of text.
@@ -697,6 +726,11 @@ Where supported by the implementation, the response should contain:
 
 The application should distinguish between a successful API request and a fully supported answer. An HTTP success response does not automatically mean the evidence is complete or the conclusion is correct.
 
+Before returning normal UI prose, the AI service validates citation IDs and
+removes internal citation markers, raw source filenames, and formatting
+artifacts from the public answer. Evidence and source metadata remain available
+in the structured response, and the frontend renders them in a readable form.
+
 ---
 
 # 9. Employee-Specific AI Agents
@@ -744,6 +778,23 @@ Generate Evidence-Based Response
           v
 Return Response
 ```
+
+The employee-agent request path uses the selected agent's Employee ID and
+authoritative Employee_Master record. The backend supplies the canonical name,
+title, department, resolved manager, persona configuration, active memories,
+and recent conversation history to the FastAPI employee-agent endpoint.
+
+The context contract also supports responsibilities, professional background,
+relevant colleagues, department context, persona configuration, system
+context, and an optional as-of date for employee-memory filtering. These
+fields are complementary to shared company retrieval; the selected employee's
+profile does not replace company evidence.
+
+Profile-only questions such as an agent's name, department, or manager are
+answered deterministically from that context and do not require company SQL/RAG
+citation generation. Company questions continue through the existing retrieval
+pipeline, while mixed questions can include profile evidence together with SQL
+or RAG evidence.
 
 ## 9.4 Agent Memory and Conversations
 
@@ -832,6 +883,28 @@ The system should clearly distinguish between:
 - Potential risks
 - Unverified concerns
 
+The implemented Risk Monitor persists assessments in the
+`risk_assessment_snapshot` PostgreSQL table. A snapshot is keyed by assessment
+date and stores its status, generated timestamp, data-version watermark,
+assessment response, and any generation error. The backend exposes:
+
+- `GET /api/v1/risk-assessments/latest` to read the latest saved state.
+- `POST /api/v1/risk-assessments/refresh` to queue one background refresh.
+
+Opening the Risk Monitor reads the saved state and does not call the AI service.
+Manual refresh and the daily scheduler generate in the background using the
+existing risk question and AI endpoint. The frontend displays `NOT_STARTED`,
+`RUNNING`, `COMPLETED`, and `FAILED` states, retains the previous assessment
+while a refresh runs, and preserves it when a refresh fails. A stale running
+snapshot is recoverable after a backend restart.
+
+The scheduled refresh uses the `02:00` default cron expression in the
+`Asia/Kolkata` business zone. A single-worker executor and an in-process
+refresh lock prevent duplicate generation. Scheduled generation is skipped
+when the current date already has a completed snapshot with the same ingestion
+watermark. Running snapshots older than 15 minutes are marked failed so an
+interrupted job can be retried.
+
 ---
 
 # 12. Historical and Time-Aware Queries
@@ -862,16 +935,17 @@ If the CEO asks what was known on 17 November, a report first received on 18 Nov
 
 ## 12.3 Historical Query Behaviour
 
-The historical query workflow should:
+The implemented historical behavior is limited:
 
-1. Identify the requested cutoff date.
-2. Retrieve records relevant to the question.
-3. Consider when each record became available.
-4. Exclude information that became available after the cutoff.
-5. Preserve the distinction between event time and reporting time.
-6. Explain limitations where historical information cannot be reconstructed reliably.
+1. Employee-agent memories can be selected as of a requested date.
+2. The response identifies that structured SQL records and document retrieval
+   are not historically versioned by that request.
+3. Event time and information-availability time remain distinct concepts for
+   interpreting source evidence.
 
-This capability depends on preserving sufficient source and record history. A current database snapshot alone cannot always reconstruct what was known in the past.
+The current database snapshot cannot always reconstruct what was known in the
+past. Full as-of filtering of structured records and document retrieval is not
+implemented.
 
 ---
 
@@ -952,6 +1026,14 @@ The backend returns application responses in a structured format.
 
 The frontend is responsible for presenting the returned information, not independently deciding whether a company fact is correct.
 
+Relevant application contracts include:
+
+- `GET /api/v1/employee-agents` and employee conversation endpoints.
+- `GET /api/v1/data-files` and `GET /api/v1/data-files/{fileId}/content`
+  for indexed source-file listing and original-file access.
+- `GET /api/v1/risk-assessments/latest` and
+  `POST /api/v1/risk-assessments/refresh` for persisted Risk Monitor state.
+
 ## 15.2 Backend to AI Service
 
 The Spring Boot backend communicates with the FastAPI AI service for AI-related processing.
@@ -959,6 +1041,10 @@ The Spring Boot backend communicates with the FastAPI AI service for AI-related 
 This keeps AI-specific orchestration separate from the core Java application.
 
 The Java backend remains responsible for its application-level business rules and API contracts.
+
+Risk generation is queued by the Java backend and uses the same AI service
+company-question endpoint in the background. Normal Risk Monitor page loading
+does not invoke this path.
 
 ## 15.3 Ingestion Service to Database
 
@@ -1158,9 +1244,9 @@ The following table distinguishes the components developed in the project from a
 | Embedding storage | Implemented |
 | AI service | Implemented |
 | SQL and RAG retrieval | Implemented |
-| Employee-specific agents | Application functionality developed; complete requirement verification should be based on the agent evaluation |
-| Risk functionality | Implemented in the application |
-| Historical query behaviour | Requires evidence-based verification against historical test cases |
+| Employee-specific agents | Implemented with canonical Employee ID mapping, profile/company/mixed routing and shared company retrieval; user-performed behavioral verification reported complete |
+| Risk functionality | Implemented with persistent daily PostgreSQL snapshots, background refresh, status handling, and manual refresh |
+| Historical query behaviour | Employee-memory as-of filtering implemented; SQL/document historical reconstruction is not implemented |
 | CEO voice-note requirements | Supported through the project data and application logic; individual task outcomes should be verified |
 | Automated evaluation | Implemented; benchmark results require continued review |
 | Production deployment | Not established by the local development setup |
@@ -1197,7 +1283,10 @@ The following areas are suitable for further development.
 
 ## 20.1 Stronger Identity Resolution
 
-Improve the mapping of people and other entities across spreadsheets, emails, and transcripts.
+Improve the remaining ambiguous mapping of people and other entities across
+spreadsheets, emails, and transcripts. Current employee-agent identity uses
+authoritative Employee IDs and supports only contextually verified name
+variants.
 
 Possible improvements:
 

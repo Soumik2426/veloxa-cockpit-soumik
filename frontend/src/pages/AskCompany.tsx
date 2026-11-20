@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 
 import { agentApi } from '../api/agentApi';
+import { readableConfidence, readableEvidence } from '../utils/evidence';
 
 type ApiResponse = Record<string, unknown>;
 
@@ -132,21 +133,22 @@ function AnswerContent({ value }: { value: unknown }) {
 }
 
 function Evidence({ value }: { value: unknown }) {
-  if (!Array.isArray(value) || value.length === 0) return null;
+  const evidence = readableEvidence(value);
+  if (evidence.length === 0) return null;
 
   return (
     <details className="company-chat-evidence">
       <summary>
         <FileText size={14} />
-        Supporting sources ({value.length})
+        Supporting sources ({evidence.length})
       </summary>
 
       <div className="company-chat-evidence-list">
-        {value.map((item, index) => (
+        {evidence.map((item, index) => (
           <div className="company-chat-evidence-item" key={index}>
-            {typeof item === 'string'
-              ? item
-              : formatValue(item)}
+            <strong>{item.fileName}</strong>
+            {item.location && <span>{item.location}</span>}
+            {item.supports && <small>Supports: {item.supports}</small>}
           </div>
         ))}
       </div>
@@ -379,11 +381,8 @@ export default function AskCompany() {
                         <>
                           <p>
                             The AI service returned a response in an
-                            unexpected format. Raw response:
+                            unexpected format.                             No readable answer was returned.
                           </p>
-                          <pre className="company-raw-response">
-                            {JSON.stringify(response, null, 2)}
-                          </pre>
                         </>
                       )}
 
@@ -396,7 +395,7 @@ export default function AskCompany() {
 
                       {confidence !== undefined && (
                         <div className="company-chat-confidence">
-                          Confidence: {formatValue(confidence)}
+                          Confidence: {readableConfidence(confidence)}
                         </div>
                       )}
 

@@ -8,6 +8,9 @@ from pydantic import ValidationError
 from app.agent.orchestrator import (
     GeminiServiceError,
     answer_question,
+    _classify_employee_question,
+    _canonicalize_employee_names,
+    _clean_user_answer,
     _confidence,
 )
 from app.agent.schemas import AgentAskRequest, AnswerDraft, RetrievalPlan
@@ -44,6 +47,312 @@ def rag_chunk():
 
 
 class AgentOrchestratorTests(unittest.TestCase):
+
+    def test_user_answer_removes_citations_markdown_and_source_names(self):
+        answer = _clean_user_answer(
+            "**Atlas is delayed** [SQL-1].\n\n"
+            "See Board_Update.pdf for the supporting detail.",
+            [
+                {
+                    "source_reference": {"file_name": "Board_Update.pdf"}
+                }
+            ],
+        )
+
+        self.assertEqual(answer, "Atlas is delayed.\n\nSee for the supporting detail.")
+        self.assertNotIn("SQL-1", answer)
+        self.assertNotIn("**", answer)
+
+    def test_identity_question_uses_employee_profile_without_retrieval(self):
+        context = {
+            "employee_code": "VX007",
+            "full_name": "Priya Nair",
+            "title": "Staff Engineer",
+            "department": "Engineering",
+            "manager": {
+                "employee_code": "VX004",
+                "full_name": "Vikram Menon",
+                "title": "VP Engineering",
+            },
+        }
+
+        with patch("app.agent.orchestrator._plan") as planner, patch(
+            "app.agent.orchestrator.retrieve_relevant_chunks"
+        ) as rag, patch(
+            "app.agent.orchestrator.execute_structured_query"
+        ) as sql:
+            response = answer_question(
+                "Tell me about yourself.",
+                employee_context=context,
+            )
+
+        planner.assert_not_called()
+        rag.assert_not_called()
+        sql.assert_not_called()
+        self.assertIn("Priya Nair", response.answer)
+        self.assertIn("Staff Engineer", response.answer)
+        self.assertIn("Engineering", response.answer)
+        self.assertEqual(response.retrieval_sources, ["profile"])
+        self.assertEqual(response.evidence[0]["evidence_id"], "PROFILE-1")
+
+    def test_employee_profile_question_families_use_context_without_retrieval(self):
+        context = {
+            "employee_code": "VX013",
+            "full_name": "Siddharth Mehta",
+            "title": "Product Marketing Manager",
+            "department": "Marketing",
+            "responsibilities": [
+                "product positioning",
+                "launch messaging",
+            ],
+            "professional_background": (
+                "I have a background in product marketing and launch planning."
+            ),
+            "relevant_colleagues": [
+                {
+                    "full_name": "Ananya Rao",
+                    "title": "Head of Marketing",
+                }
+            ],
+        }
+
+        questions = (
+            "What type of work do you handle?",
+            "What are your responsibilities?",
+            "Any more information about you?",
+            "Tell me more about your professional background.",
+            "What projects are you involved in?",
+        )
+
+        for question in questions:
+            with self.subTest(question=question), patch(
+                "app.agent.orchestrator._plan"
+            ) as planner, patch(
+                "app.agent.orchestrator.retrieve_relevant_chunks"
+            ) as rag, patch(
+                "app.agent.orchestrator.execute_structured_query"
+            ) as sql:
+                response = answer_question(
+                    question,
+                    employee_context=context,
+                )
+
+            planner.assert_not_called()
+            rag.assert_not_called()
+            sql.assert_not_called()
+            self.assertNotIn(
+                "valid evidence citations",
+                response.answer,
+            )
+            self.assertEqual(response.retrieval_sources, ["profile"])
+
+    def test_follow_up_uses_previous_employee_context_without_repeating_intro(self):
+        context = {
+            "employee_code": "VX013",
+            "full_name": "Siddharth Mehta",
+            "title": "Product Marketing Manager",
+            "department": "Marketing",
+            "responsibilities": ["launch messaging"],
+            "conversation_history": [
+                {
+                    "role": "ASSISTANT",
+                    "content": (
+                        "I am Siddharth Mehta, Product Marketing Manager "
+                        "in Marketing."
+                    ),
+                }
+            ],
+        }
+
+        response = answer_question(
+            "Can you elaborate?",
+            employee_context=context,
+        )
+
+        self.assertIn("launch messaging", response.answer)
+        self.assertNotIn("I am Siddharth Mehta", response.answer)
+        self.assertEqual(response.retrieval_sources, ["profile"])
+
+    def test_missing_work_profile_uses_employee_scoped_retrieval_then_natural_fallback(self):
+        context = {
+            "employee_code": "VX013",
+            "full_name": "Siddharth Mehta",
+            "title": "Product Marketing Manager",
+            "department": "Marketing",
+        }
+        plan = RetrievalPlan(
+            sources=["sql"],
+            search_terms=["Siddharth Mehta"],
+        )
+
+        with patch(
+            "app.agent.orchestrator._plan",
+            return_value=plan,
+        ) as planner, patch(
+            "app.agent.orchestrator.search_structured_records",
+            return_value=[],
+        ):
+            response = answer_question(
+                "What type of work do you handle?",
+                employee_context=context,
+            )
+
+        planner.assert_called_once()
+        planned_question = planner.call_args.args[0]
+        self.assertIn("Siddharth Mehta", planned_question)
+        self.assertIn("VX013", planned_question)
+        self.assertIn("Siddharth Mehta", response.answer)
+        self.assertNotIn("valid evidence citations", response.answer)
+        self.assertIn(
+            "No supporting company records were found",
+            " ".join(response.limitations),
+        )
+
+    def test_employee_question_classifier_distinguishes_mixed_company_context(self):
+        self.assertEqual(
+            _classify_employee_question("What projects are you involved in?"),
+            "profile",
+        )
+        self.assertEqual(
+            _classify_employee_question("What are you working on in Atlas?"),
+            "mixed",
+        )
+        self.assertEqual(
+            _classify_employee_question("What are the current company risks?"),
+            "company",
+        )
+        self.assertEqual(
+            _classify_employee_question("What projects are delayed?"),
+            "company",
+        )
+        self.assertEqual(
+            _classify_employee_question("What do you know about this company?"),
+            "company",
+        )
+        self.assertEqual(
+            _classify_employee_question(
+                "What do you know about the technical side of the company?"
+            ),
+            "company",
+        )
+        self.assertEqual(
+            _classify_employee_question(
+                "What is your role in the company's Atlas project?"
+            ),
+            "mixed",
+        )
+        self.assertEqual(
+            _classify_employee_question(
+                "What is your department currently working on?"
+            ),
+            "company",
+        )
+
+    def test_company_follow_up_keeps_company_context(self):
+        context = {
+            "conversation_history": [
+                {
+                    "role": "USER",
+                    "content": "What do you know about this company?",
+                }
+            ]
+        }
+
+        self.assertEqual(
+            _classify_employee_question("Can you elaborate?", context),
+            "company",
+        )
+
+    def test_company_question_with_employee_context_uses_shared_retrieval(self):
+        plan = RetrievalPlan(
+            sources=["sql"],
+            search_terms=["company"],
+        )
+        answer = AnswerDraft(
+            answer="The company record reports a delayed project [SQL-1]."
+        )
+        context = {
+            "employee_code": "VX013",
+            "full_name": "Siddharth Mehta",
+            "title": "Product Marketing Manager",
+            "department": "Marketing",
+        }
+
+        with self.run_with_plan(plan, answer), patch(
+            "app.agent.orchestrator.search_structured_records",
+            return_value=[sql_row()],
+        ):
+            response = answer_question(
+                "What do you know about this company?",
+                employee_context=context,
+            )
+
+        self.assertEqual(response.retrieval_sources, ["sql"])
+        self.assertEqual(
+            [item["evidence_id"] for item in response.evidence],
+            ["SQL-1"],
+        )
+        self.assertNotIn("Siddharth Mehta", response.answer)
+
+    def test_mixed_question_keeps_profile_evidence_with_company_retrieval(self):
+        plan = RetrievalPlan(
+            sources=["sql"],
+            search_terms=["Atlas"],
+        )
+        answer = AnswerDraft(
+            answer=(
+                "I am the selected engineer [PROFILE-1], and Atlas is delayed "
+                "[SQL-1]."
+            )
+        )
+        context = {
+            "employee_code": "VX007",
+            "full_name": "Priya Nair",
+            "title": "Staff Engineer",
+            "department": "Engineering",
+        }
+
+        with self.run_with_plan(plan, answer), patch(
+            "app.agent.orchestrator.search_structured_records",
+            return_value=[sql_row()],
+        ):
+            response = answer_question(
+                "What is your role and what is happening with Atlas?",
+                employee_context=context,
+            )
+
+        self.assertEqual(
+            [item["evidence_id"] for item in response.evidence],
+            ["PROFILE-1", "SQL-1"],
+        )
+        self.assertNotIn("PROFILE-1", response.answer)
+        self.assertNotIn("SQL-1", response.answer)
+
+    def test_canonical_employee_name_replaces_supported_transcription_variant(self):
+        answer, discrepancies = _canonicalize_employee_names(
+            "Pria owns the Atlas routing work.",
+            [
+                {
+                    "source": "sql",
+                    "content": {
+                        "results": [
+                            {
+                                "extracted_data": {
+                                    "data": {"Full Name": "Priya Nair"}
+                                }
+                            }
+                        ]
+                    },
+                },
+                {
+                    "source": "rag",
+                    "content": "Pria owns the Atlas routing work.",
+                },
+            ],
+        )
+
+        self.assertEqual(answer, "Priya Nair owns the Atlas routing work.")
+        self.assertEqual(len(discrepancies), 1)
 
     def setUp(self):
         self.catalogue_patcher = patch(

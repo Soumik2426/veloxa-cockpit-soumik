@@ -13,9 +13,18 @@
 ## 2. Employee and Organizational Data
 
 - Employee identifiers are treated as the primary identifiers when matching employee records.
+- `Employee_Master.xlsx` is authoritative for the current employee ID, full
+  name, designation, department, manager relationship, and employment status.
+- Transcript variants such as "Pria" are retained in original source content.
+  The application may present the canonical employee name only when the
+  authoritative record and supporting context establish the match.
 - Names and email addresses may be used for entity resolution, but inferred identity matches are not treated as authoritative without supporting evidence.
 - An employee's employment status is distinct from whether their AI agent is enabled.
 - Office location does not necessarily establish whether an employee works remotely, from an office, or in a hybrid arrangement.
+- Assessment-permitted employee persona configuration may provide conversational
+  role context that is not present in the employee master. Such persona
+  details are treated as disclosed assumptions, not verified company facts,
+  and must not be used to invent employment history or business records.
 
 ## 3. Financial and Operational Data
 
@@ -34,6 +43,9 @@
 ## 5. Historical and Temporal Queries
 
 - Historical answers are based on evidence available for the requested date or reporting period.
+- Employee-agent memories can be filtered as of a requested date, but the
+  current SQL records and document chunks are not historically versioned by
+  that request.
 - A document's creation date, modification date, and the date of an underlying business event are treated as distinct.
 - When the exact effective date of a change cannot be established, the system should state that limitation rather than infer a date.
 
@@ -43,6 +55,16 @@
 - Conflicting records should be surfaced with their respective source references.
 - A successful API response does not independently establish factual correctness.
 - Confidence levels communicate evidence coverage and retrieval limitations, not a guarantee of correctness.
+
+## 6.1 Risk Assessment Snapshots
+
+- A daily Risk Monitor snapshot represents the evidence retrieved when its
+  recorded data-version watermark was current.
+- A `RUNNING` snapshot is processing state, not evidence that the assessment
+  failed.
+- A failed refresh must not replace a previously completed assessment.
+- The absence of a completed snapshot means that risk findings have not yet
+  been generated; it does not mean that no risks exist.
 
 ## 7. Assessment Data Limitations Observed
 

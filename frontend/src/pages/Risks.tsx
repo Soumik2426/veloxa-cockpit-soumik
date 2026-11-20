@@ -8,32 +8,12 @@ import {
   Activity,
 } from 'lucide-react';
 
-import { agentApi } from '../api/agentApi';
+import {
+  riskApi,
+  type RiskAssessmentSnapshot,
+} from '../api/riskApi';
 
 type ApiResponse = Record<string, unknown>;
-
-const RISK_QUESTION = `
-Analyse the company's current business risks using the available company records
-and documents.
-
-Identify:
-1. Major business risks.
-2. Personnel and employee attrition risks.
-3. Engineering and product delivery risks.
-4. Financial, hiring and operational risks.
-5. Supporting evidence and source references for each risk.
-6. What should the CEO worry about most?
-7. Any information gaps or uncertainties.
-
-For every finding:
-- Explain the risk clearly.
-- State its potential business impact.
-- Cite the supporting source documents.
-- Distinguish confirmed evidence from assumptions.
-- Do not invent risk scores, dates, facts or evidence.
-
-Present the answer in clearly separated sections with concise bullet points.
-`;
 
 function getValue(
   data: ApiResponse,
@@ -340,33 +320,23 @@ function Evidence({ value }: { value: unknown }) {
 }
 
 export default function Risks() {
-  const [result, setResult] = useState<ApiResponse | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [snapshot, setSnapshot] =
+    useState<RiskAssessmentSnapshot | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
-  const [lastUpdated, setLastUpdated] = useState('');
 
-  const loadRisks = useCallback(async () => {
+  const loadSnapshot = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
 
-      const response = await agentApi.askCompany(RISK_QUESTION);
-
-      console.log('[RiskMonitor] AI response:', response);
-
-      setResult(response);
-
-      setLastUpdated(
-        new Date().toLocaleString('en-IN', {
-          dateStyle: 'medium',
-          timeStyle: 'short',
-        })
-      );
+      setSnapshot(await riskApi.latest());
     } catch (err) {
-      console.error('[RiskMonitor] Failed:', err);
+      console.error('[RiskMonitor] Failed to load saved assessment:', err);
 
       setError(
-        'Unable to generate the risk assessment. Please check the AI service and try again.'
+        'Unable to load the saved risk assessment. Please try again.'
       );
     } finally {
       setLoading(false);
@@ -374,8 +344,55 @@ export default function Risks() {
   }, []);
 
   useEffect(() => {
-    void loadRisks();
-  }, [loadRisks]);
+    void loadSnapshot();
+  }, [loadSnapshot]);
+
+  useEffect(() => {
+    if (snapshot?.status !== 'RUNNING') return undefined;
+
+    const poller = window.setInterval(async () => {
+      try {
+        setSnapshot(await riskApi.latest());
+      } catch (err) {
+        console.error('[RiskMonitor] Failed to poll assessment:', err);
+      }
+    }, 2000);
+
+    return () => window.clearInterval(poller);
+  }, [snapshot?.status]);
+
+  async function refreshAssessment() {
+    if (refreshing || snapshot?.status === 'RUNNING') return;
+
+    try {
+      setRefreshing(true);
+      setError('');
+      setSnapshot(await riskApi.refresh());
+    } catch (err) {
+      console.error('[RiskMonitor] Refresh failed:', err);
+      setError(
+        snapshot?.assessment
+          ? 'The latest risk assessment could not be generated. Showing the last successful assessment.'
+          : 'The risk assessment could not be generated. Please retry.'
+      );
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  const result = snapshot?.assessment ?? null;
+  const assessmentDate = snapshot?.assessmentDate
+    ? new Date(`${snapshot.assessmentDate}T00:00:00`).toLocaleDateString(
+        'en-IN',
+        { dateStyle: 'medium' }
+      )
+    : '';
+  const generatedAt = snapshot?.generatedAt
+    ? new Date(snapshot.generatedAt).toLocaleString('en-IN', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      })
+    : '';
 
   const answer = result
     ? getValue(result, [
@@ -431,14 +448,20 @@ export default function Risks() {
         <button
           type="button"
           className="secondary-button"
-          onClick={() => void loadRisks()}
-          disabled={loading}
+          onClick={() => void refreshAssessment()}
+          disabled={refreshing || snapshot?.status === 'RUNNING'}
         >
           <RefreshCw
             size={15}
-            className={loading ? 'animate-spin' : ''}
+            className={
+              refreshing || snapshot?.status === 'RUNNING'
+                ? 'animate-spin'
+                : ''
+            }
           />
-          Refresh analysis
+          {refreshing || snapshot?.status === 'RUNNING'
+            ? 'Generating...'
+            : 'Refresh analysis'}
         </button>
       </div>
 
@@ -455,11 +478,47 @@ export default function Risks() {
             identifies potential areas requiring executive attention.
           </p>
 
-          {lastUpdated && (
-            <span>Last generated: {lastUpdated}</span>
+          {assessmentDate && (
+            <span>Assessment date: {assessmentDate}</span>
+          )}
+
+          {generatedAt && (
+            <span>Last generated: {generatedAt}</span>
           )}
         </div>
       </div>
+
+      {snapshot?.status === 'RUNNING' && (
+        <div className="risk-loading">
+          <RefreshCw size={22} className="animate-spin" />
+          <div>
+            <strong>Generating the latest risk assessment.</strong>
+            <p>
+              Your previous assessment remains available while the refresh
+              completes.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {snapshot?.status === 'NOT_STARTED' && (
+        <div className="risk-loading">
+          <ShieldAlert size={22} />
+          <div>
+            <strong>Risk assessment has not been generated yet.</strong>
+            <p>Use Refresh analysis to generate the first snapshot.</p>
+          </div>
+        </div>
+      )}
+
+      {snapshot?.status === 'FAILED' && (
+        <div className="error-banner">
+          <AlertTriangle size={18} />
+          {snapshot.assessment
+            ? 'The latest risk assessment could not be generated. Showing the last successful assessment.'
+            : 'The risk assessment could not be generated. Please retry.'}
+        </div>
+      )}
 
       {error && (
         <div className="error-banner">
@@ -468,28 +527,28 @@ export default function Risks() {
 
           <button
             type="button"
-            onClick={() => void loadRisks()}
+            onClick={() => void loadSnapshot()}
           >
             Retry
           </button>
         </div>
       )}
 
-      {loading && (
+      {loading && !snapshot && (
         <div className="risk-loading">
           <RefreshCw size={22} className="animate-spin" />
 
           <div>
-            <strong>Analysing company risks...</strong>
+            <strong>Loading saved risk assessment...</strong>
 
             <p>
-              Reviewing available evidence and identifying executive concerns.
+              Retrieving the latest persisted assessment.
             </p>
           </div>
         </div>
       )}
 
-      {result && !loading && (
+      {result && (
         <>
           <div className="risk-section-heading">
             <div>

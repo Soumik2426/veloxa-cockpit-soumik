@@ -5,17 +5,13 @@ import AgentConversations from './pages/AgentConversations';
 import AgentProfile from './pages/AgentProfile';
 import { useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import {
-  Mic,
-  Database,
-} from 'lucide-react';
-
 import Sidebar from './components/layout/Sidebar';
 import Header from './components/layout/Header';
-import PagePlaceholder from './components/common/PagePlaceholder';
 
 import Overview from './pages/Overview';
 import EmployeeAgents from './pages/EmployeeAgents';
+import VoiceNotes from './pages/VoiceNotes';
+import DataSources from './pages/DataSources';
 
 import './App.css';
 
@@ -49,27 +45,8 @@ function AppContent() {
 
             <Route path="/risks" element={<Risks />} />
 
-            <Route
-              path="/voice-notes"
-              element={
-                <PagePlaceholder
-                  title="CEO voice notes"
-                  description="Submit CEO instructions and review changes or written pushbacks."
-                  icon={Mic}
-                />
-              }
-            />
-
-            <Route
-              path="/data-sources"
-              element={
-                <PagePlaceholder
-                  title="Data sources"
-                  description="Review ingested files, data sources and pipeline activity."
-                  icon={Database}
-                />
-              }
-            />
+            <Route path="/voice-notes" element={<VoiceNotes />} />
+            <Route path="/data-sources" element={<DataSources />} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

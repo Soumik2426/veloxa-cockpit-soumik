@@ -58,8 +58,7 @@ public class EmployeeAgent {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
             name = "source_record_id",
-            nullable = false,
-            updatable = false
+            nullable = false
     )
     private ExtractedRecord sourceRecord;
 

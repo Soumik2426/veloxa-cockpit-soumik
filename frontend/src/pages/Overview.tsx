@@ -2,13 +2,11 @@
 import { useEffect, useState } from 'react';
 import {
   Activity,
-  AlertTriangle,
   Users,
   MessageSquare,
   ArrowRight,
   Database,
   ShieldCheck,
-  RefreshCw,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -43,33 +41,6 @@ export default function Overview() {
       active = false;
     };
   }, []);
-
-  const metrics = [
-    {
-      label: 'Business Health',
-      value: '—',
-      note: 'Awaiting verified business metrics',
-      icon: Activity,
-    },
-    {
-      label: 'Open Concerns',
-      value: '—',
-      note: 'Awaiting risk intelligence',
-      icon: AlertTriangle,
-    },
-    {
-      label: 'Employee Agents',
-      value: loadingAgents ? '...' : agentCount === null ? '—' : String(agentCount),
-      note: 'Registered employee agents',
-      icon: Users,
-    },
-    {
-      label: 'Pending Decisions',
-      value: '—',
-      note: 'Awaiting decision data',
-      icon: MessageSquare,
-    },
-  ];
 
   const shortcuts = [
     {
@@ -117,25 +88,37 @@ export default function Overview() {
         </div>
       </div>
 
-      <section className="metrics-grid">
-        {metrics.map(({ label, value, note, icon: Icon }) => (
-          <article className="metric-card" key={label}>
-            <div className="metric-top">
-              <span>{label}</span>
-              <Icon size={19} />
-            </div>
-            <div className="metric-value">{value}</div>
-            <p>{note}</p>
-          </article>
-        ))}
-      </section>
+      <section className="workspace-summary" aria-label="Executive workspace summary">
+        <div className="workspace-summary-main">
+          <div className="workspace-summary-icon">
+            <Users size={21} />
+          </div>
+          <div>
+            <div className="workspace-summary-eyebrow">WORKSPACE COVERAGE</div>
+            <h2>Employee intelligence</h2>
+            <p>
+              Explore role-specific perspectives across the company&apos;s
+              employee agents.
+            </p>
+          </div>
+        </div>
 
-      {agentCount !== null && (
-        <p className="overview-data-note">
-          <RefreshCw size={13} />
-          Employee count retrieved from the live employee-agent API.
-        </p>
-      )}
+        {(loadingAgents || agentCount !== null) && (
+          <div className="workspace-summary-stat">
+            {loadingAgents && <span>Loading agents...</span>}
+            {agentCount !== null && (
+              <>
+                <strong>{agentCount}</strong>
+                <span>registered agents</span>
+              </>
+            )}
+          </div>
+        )}
+
+        <Link to="/agents" className="workspace-summary-link">
+          Explore agents <ArrowRight size={15} />
+        </Link>
+      </section>
 
       <section className="section-block">
         <div className="section-heading">

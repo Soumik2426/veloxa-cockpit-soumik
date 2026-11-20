@@ -135,11 +135,9 @@ public class EmployeeAgentRegistrationServiceImpl
 
                 if (!existingAgent.getSourceRecord().getId()
                         .equals(sourceRecord.getId())) {
-
-                    throw new IllegalStateException(
-                            "Existing registration for " + employeeCode
-                                    + " points to a different source record"
-                    );
+                    // Reconcile stale registrations to the authoritative
+                    // Employee_Master record without creating a duplicate.
+                    existingAgent.setSourceRecord(sourceRecord);
                 }
 
                 if (!existingAgent.getAgentKey().equals(agentKey)) {

@@ -113,6 +113,71 @@ This document records important technical and product decisions made while build
 - **Reason:** Enables conversation history retrieval and continuity across sessions.
 - **Trade-off:** Requires appropriate context management when constructing future prompts.
 
+### Decision: Use Employee ID and Employee_Master for agent identity
+
+- **Chosen approach:** Register each agent by Employee ID and resolve current
+  name, title, department, status, and manager from the authoritative employee
+  master record.
+- **Reason:** Names in transcripts and documents can contain spelling variants
+  and must not become the primary identity key.
+- **Trade-off:** Ambiguous transcript references remain uncertain; the
+  application preserves source wording and only presents a canonical name when
+  supporting evidence establishes the match.
+
+### Decision: Route profile-only employee questions deterministically
+
+- **Chosen approach:** Answer basic identity questions from the verified
+  employee context without forcing them through SQL/RAG citation validation.
+  Company and mixed questions continue through the existing retrieval flow.
+- **Reason:** An agent introduction or manager lookup is already available in
+  the selected employee profile and should not fail because no company
+  retrieval citation was produced.
+- **Trade-off:** The profile path must remain limited to verified context and
+  must not be used to fabricate responsibilities or company facts.
+
+### Decision: Keep employee profile context complementary to company retrieval
+
+- **Chosen approach:** Classify employee-agent requests into profile, work,
+  company, and mixed intents. Use the selected Employee ID context for
+  profile-only questions, employee-scoped SQL/RAG retrieval when work details
+  are missing, and shared retrieval for company questions.
+- **Reason:** Every agent must retain an individual identity while still being
+  able to answer company, technical, departmental, and cross-department
+  questions.
+- **Trade-off:** Ambiguous follow-ups require recent conversation history to
+  determine whether the user is continuing a company topic or an employee
+  topic. Company answers continue to require validated evidence.
+
+### Decision: Preserve evidence metadata while cleaning public answers
+
+- **Chosen approach:** Validate internal citation IDs and retain structured
+  evidence metadata, while removing citation markers, raw filenames, and
+  internal formatting from normal answer prose.
+- **Reason:** Executives need readable answers without losing traceability.
+- **Trade-off:** The frontend must render evidence separately from the answer
+  text.
+
+### Decision: Serve original indexed files through the backend
+
+- **Chosen approach:** Resolve a file ID through ingestion metadata, constrain
+  the resolved path to the configured data root, and return the original file
+  with its detected MIME type.
+- **Reason:** The Data Sources page must provide source inspection without
+  giving the frontend direct filesystem access.
+- **Trade-off:** The configured source directory and indexed relative paths
+  must remain available to the backend.
+
+### Decision: Persist daily Risk Monitor snapshots
+
+- **Chosen approach:** Store one PostgreSQL risk snapshot per assessment date,
+  including the response, status, timestamps, data watermark, and errors.
+  Generate refreshes asynchronously through a single-worker executor and run
+  an idempotent daily scheduler at 02:00 in the Asia/Kolkata business zone.
+- **Reason:** Opening the Risk Monitor must be fast and must not repeatedly spend
+  an AI call for the same assessment.
+- **Trade-off:** The first assessment is unavailable until a refresh completes,
+  and stale or failed snapshots require an explicit retry.
+
 ---
 
 ## 6. Product Behaviour and Safety
@@ -158,7 +223,8 @@ This document records important technical and product decisions made while build
 The following are potential improvements rather than claims of completed functionality:
 
 - More granular file-level failure recovery.
-- Stronger entity resolution using authoritative identity mappings.
+- Broader verified alias coverage and manual review for ambiguous references
+  that remain after Employee ID-based resolution.
 - Improved retrieval context management for large evidence sets.
 - Expanded benchmark coverage and automated answer-quality evaluation.
 - More detailed historical snapshots for reliable as-of-date queries.

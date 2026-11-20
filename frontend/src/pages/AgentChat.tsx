@@ -8,7 +8,6 @@ import {
   RefreshCw,
   MessageSquare,
   AlertCircle,
-  CalendarDays,
   UserRound,
   Bot,
   FileText,
@@ -16,6 +15,7 @@ import {
 
 import { agentApi } from '../api/agentApi';
 import type { AgentMessage, ConversationDetails } from '../types/message';
+import { readableEvidence } from '../utils/evidence';
 
 function getMessageRole(message: AgentMessage): string {
   return (message.role || message.senderType || '').toLowerCase();
@@ -64,7 +64,6 @@ export default function AgentChat() {
 
   const [messages, setMessages] = useState<AgentMessage[]>([]);
   const [input, setInput] = useState('');
-  const [asOfDate, setAsOfDate] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
@@ -120,10 +119,7 @@ export default function AgentChat() {
       setError('');
       setInput('');
 
-      const request = {
-        content,
-        ...(asOfDate ? { asOfDate } : {}),
-      };
+      const request = { content };
 
       const response = await agentApi.sendMessage(
         conversationId,
@@ -221,7 +217,7 @@ export default function AgentChat() {
         ) : (
           messages.map((message, index) => {
             const userMessage = isUserMessage(message);
-            const citations = getCitations(message);
+            const citations = readableEvidence(getCitations(message));
 
             return (
               <div
@@ -260,9 +256,11 @@ export default function AgentChat() {
                           className="citation-item"
                           key={citationIndex}
                         >
-                          {typeof citation === 'string'
-                            ? citation
-                            : JSON.stringify(citation)}
+                          <strong>{citation.fileName}</strong>
+                          {citation.location && <span>{citation.location}</span>}
+                          {citation.supports && (
+                            <small>Supports: {citation.supports}</small>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -330,17 +328,6 @@ export default function AgentChat() {
           </div>
 
           <div className="chat-composer-footer">
-            <label className="historical-date-control">
-              <CalendarDays size={14} />
-              <span>Ask as of date</span>
-
-              <input
-                type="date"
-                value={asOfDate}
-                onChange={(event) => setAsOfDate(event.target.value)}
-              />
-            </label>
-
             <span>{input.length}/2000 characters</span>
           </div>
         </form>

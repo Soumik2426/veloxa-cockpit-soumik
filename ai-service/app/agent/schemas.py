@@ -118,6 +118,18 @@ class EmployeeAgentContext(BaseModel):
     full_name: str = Field(min_length=1, max_length=150)
     title: str = Field(min_length=1, max_length=150)
     department: str | None = Field(default=None, max_length=100)
+    manager: dict[str, Any] | None = None
+    responsibilities: list[str] = Field(default_factory=list, max_length=20)
+    professional_background: str | None = Field(default=None, max_length=2000)
+    relevant_colleagues: list[dict[str, Any]] = Field(
+        default_factory=list,
+        max_length=50,
+    )
+    department_context: dict[str, Any] = Field(default_factory=dict)
+    conversation_history: list[dict[str, Any]] = Field(
+        default_factory=list,
+        max_length=20,
+    )
     persona_config: dict[str, Any] = Field(default_factory=dict)
     system_context: str | None = Field(default=None, max_length=8000)
     memories: list[EmployeeMemoryContext] = Field(default_factory=list, max_length=50)

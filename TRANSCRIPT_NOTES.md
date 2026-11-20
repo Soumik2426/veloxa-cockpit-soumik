@@ -16,8 +16,12 @@ Conclusions are based on available supporting evidence. Unverified interpretatio
 - **Source:** T1_CEO_Kickoff_Call.docx, T5_VP_Engineering_Call.docx, T6d_CEO_Voice_Note.docx
 - **Observed issue:** The transcripts refer to an employee as "Pria", while the employee master and other company records contain the name "Priya Nair".
 - **Evidence:** The employee master identifies Priya Nair as Staff Engineer. The engineering call describes Pria as the routing lead. The CEO voice note mentions Pria's resignation.
-- **Conclusion:** These references may refer to Priya Nair, but the transcript spelling alone is not sufficient to establish identity conclusively.
-- **Status:** Requires identity confirmation.
+- **Conclusion:** The authoritative employee record is `VX007 / Priya Nair /
+  Staff Engineer / Engineering`. The transcript spelling alone is not
+  sufficient to prove that every "Pria" mention refers to her, so the original
+  source wording remains unchanged.
+- **Status:** Canonical application identity established from Employee_Master;
+  individual transcript claims still require supporting context.
 
 ### 1.2 Sneha / Snehal
 
@@ -83,7 +87,8 @@ Conclusions are based on available supporting evidence. Unverified interpretatio
 - **Source:** T6a_CEO_Voice_Note.docx
 - **Observed statement:** The CEO wants the cockpit to proactively present the top three things to worry about rather than requiring a question every morning.
 - **Conclusion:** The cockpit should support proactive risk summaries and highlight important developments.
-- **Status:** Product requirement.
+- **Status:** Implemented through the persisted daily Risk Monitor snapshot;
+  the first snapshot still requires generation.
 
 ### 4.2 Employee Sentiment and Privacy
 

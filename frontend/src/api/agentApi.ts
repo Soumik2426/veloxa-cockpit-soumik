@@ -121,13 +121,13 @@ export const agentApi = {
     return unwrapObject<AgentMessage>(response.data);
   },
 
-    async askCompany(question: string): Promise<Record<string, unknown>> {
+  async askCompany(question: string): Promise<Record<string, unknown>> {
     const response = await apiClient.post<Record<string, unknown>>(
         '/api/v1/agent/ask',
             { question }
         );
 
         return unwrapObject<Record<string, unknown>>(response.data);
-    },
+  },
 
 };

@@ -37,7 +37,8 @@ Built for the five-day Hiyaku Systems Hackathon.
 | **Traceable citations** | Every answer links back to its source: file, sheet, row, page, email or transcript reference |
 | **14 employee agents** | One shared agent implementation, each agent scoped to an employee's role and context |
 | **Risk cockpit** | Surfaces material business risks and separates confirmed events from potential risks and unverified concerns |
-| **Point-in-time queries** | Answers "what was known on date X" without leaking information that arrived later |
+| **Historical employee context** | Filters persisted employee memories by an as-of date; structured and document retrieval remains based on the current ingested data |
+| **Original source access** | Lists indexed source files and opens the original files through the backend |
 | **CEO voice-note tasks** | Handles the four CEO voice-note tasks, flagging ambiguities and contradictions |
 | **Uncertainty handling** | Reports conflicting, incomplete or insufficient evidence explicitly |
 | **Privacy guardrails** | Restricts sensitive data before it reaches the model or UI, and refuses speculative individual predictions |
@@ -131,11 +132,13 @@ The database must be configured in **all three** backend components, using the s
 
 | Component | Where to configure |
 |---|---|
-| `ingestion-service` | Its local configuration / environment file |
-| `ai-service` | Its local configuration / environment file |
+| `ingestion-service/.env` | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `INPUT_DIRECTORY`, `AI_SERVICE_URL` |
+| `ai-service/.env` | `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `INPUT_DIRECTORY`, `GEMINI_API_KEY`, and model/provider settings |
 | Spring Boot backend | `src/main/resources/application.yml` |
 
-Also add your language model provider key to the `ai-service` configuration. **Never commit credentials or API keys.**
+The frontend can override its backend URL with `frontend/.env` using
+`VITE_API_BASE_URL`. Add provider keys only to local configuration files.
+**Never commit credentials or API keys.**
 
 Make sure PostgreSQL is running before the next step (for example, `docker compose up -d`).
 
@@ -171,7 +174,7 @@ source venv/bin/activate        # Windows: venv\Scripts\activate
 
 pip install -r requirements.txt
 
-uvicorn app.main:app --port 8000
+uvicorn app.api:app --port 8000
 ```
 
 ### 5. Start the Spring Boot backend
@@ -245,17 +248,19 @@ These figures describe the recorded ingestion state. They do not prove that ever
 ## How Questions Are Answered
 
 1. Receive the question and identify entities, dates and constraints.
-2. Decide whether it needs **SQL**, **RAG**, or **both**.
-3. Retrieve structured records and relevant document chunks, each with its source reference.
-4. Flag missing or conflicting evidence.
-5. Generate the answer from the prepared evidence.
-6. Validate the response and return it with citations.
+2. For an employee agent, classify the request as profile, company, work, or mixed.
+3. Answer profile-only identity questions from the selected Employee ID context.
+4. Route company, technical, departmental, and cross-department questions through **SQL**, **RAG**, or both.
+5. Add profile evidence to mixed answers without replacing company evidence.
+6. Flag missing or conflicting evidence.
+7. Generate the answer from the prepared evidence.
+8. Validate citations and return readable evidence metadata.
 
 A response includes the answer, supporting evidence, source references, relevant dates, conflicts, evidence limitations and a confidence assessment. An HTTP 200 does not mean a fully supported answer, and the system treats the two separately.
 
 ### Time-aware queries
 
-The system separates **event time** (when something happened) from **availability time** (when the company learned of it). A question about what was known on 17 November will not use a report first received on 18 November.
+The system separates **event time** (when something happened) from **availability time** (when the company learned of it). Employee-agent memories can be filtered as of a requested date. Structured SQL records and document retrieval use the current ingested data and are not historically versioned by that request, so answers must disclose that limitation where relevant.
 
 ---
 
@@ -266,11 +271,22 @@ The system separates **event time** (when something happened) from **availabilit
 - **Unit and integration tests** use JUnit 5 and Spring Boot Test for the backend and pytest for the Python services, with mocked model responses so core tests do not depend on live model output.
 
 ```bash
-# Backend tests
+# Backend tests, from the repository root
 mvn test
 
-# Python service tests
+# AI service tests
+cd ai-service
+# PowerShell:
+$env:PYTHONPATH = (Get-Location).Path
 pytest
+
+# Ingestion service tests
+cd ../ingestion-service
+pytest
+
+# Frontend production build
+cd ../frontend
+npm run build
 ```
 
 ---
@@ -296,8 +312,8 @@ pytest
 | AI service (SQL + RAG) | Implemented |
 | Document chunks and embeddings | Implemented |
 | Risk functionality | Implemented |
-| Employee agents | Implemented; full requirement verification relies on the agent evaluation |
-| Historical queries | Needs further verification against historical test cases |
+| Employee agents | Implemented with canonical Employee ID mapping, profile-aware routing and shared company retrieval; user-performed behavioral verification reported complete |
+| Historical queries | Employee-memory as-of filtering implemented; SQL/document historical reconstruction remains limited |
 | CEO voice-note tasks | Supported; individual outcomes should be verified |
 | Production deployment | Not established; local development setup only |
 
@@ -305,8 +321,10 @@ pytest
 
 ## Known Limitations
 
-- **Identity resolution:** names differ across spreadsheets, emails and transcripts; stronger alias mapping is needed.
-- **Historical reconstruction:** a current snapshot cannot always rebuild past knowledge states; record versioning and availability timestamps would help.
+- **Identity resolution:** canonical Employee ID mapping handles supported transcript variants; ambiguous references remain unresolved rather than guessed.
+- **Employee context coverage:** the context contract supports responsibilities, professional background, colleagues, department context, memories and conversation history; some persisted profiles may not contain every field.
+- **Risk snapshots:** assessments are retained as daily PostgreSQL snapshots; a first snapshot must be generated before the Risk Monitor can display results.
+- **Historical reconstruction:** SQL and document retrieval are not versioned by the employee-memory as-of filter; a current snapshot cannot always rebuild past knowledge states.
 - **Retrieval coverage:** some questions have relevant data that is not retrieved.
 - **Evaluation:** some cases show a failed API call, low confidence or incomplete evidence, so the system should not be described as perfectly accurate.
 - **Operations:** production authentication, centralised logging, monitoring and deployment automation are future work.

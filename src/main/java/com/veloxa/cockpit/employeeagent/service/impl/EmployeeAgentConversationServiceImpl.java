@@ -20,10 +20,7 @@ import com.veloxa.cockpit.employeeagent.dto.EmployeeAgentResponse;
 import com.veloxa.cockpit.employeeagent.dto.SendAgentMessageRequest;
 import com.veloxa.cockpit.employeeagent.dto.SendAgentMessageResponse;
 
-import com.veloxa.cockpit.employeeagent.entity.AgentConversation;
-import com.veloxa.cockpit.employeeagent.entity.AgentMemory;
-import com.veloxa.cockpit.employeeagent.entity.AgentMessage;
-import com.veloxa.cockpit.employeeagent.entity.EmployeeAgent;
+import com.veloxa.cockpit.employeeagent.entity.*;
 
 import com.veloxa.cockpit.employeeagent.enums.ConversationStatus;
 import com.veloxa.cockpit.employeeagent.enums.MemoryStatus;
@@ -33,6 +30,7 @@ import com.veloxa.cockpit.employeeagent.repository.AgentConversationRepository;
 import com.veloxa.cockpit.employeeagent.repository.AgentMemoryRepository;
 import com.veloxa.cockpit.employeeagent.repository.AgentMessageRepository;
 import com.veloxa.cockpit.employeeagent.repository.EmployeeAgentRepository;
+import com.veloxa.cockpit.employeeagent.repository.ExtractedRecordRepository;
 
 import com.veloxa.cockpit.employeeagent.service.EmployeeAgentConversationService;
 
@@ -57,6 +55,7 @@ public class EmployeeAgentConversationServiceImpl
     private final AgentConversationRepository conversationRepository;
     private final AgentMessageRepository messageRepository;
     private final AgentMemoryRepository memoryRepository;
+    private final ExtractedRecordRepository extractedRecordRepository;
 
     private final RestClient aiServiceClient;
     private final ObjectMapper objectMapper;
@@ -67,6 +66,7 @@ public class EmployeeAgentConversationServiceImpl
             AgentConversationRepository conversationRepository,
             AgentMessageRepository messageRepository,
             AgentMemoryRepository memoryRepository,
+            ExtractedRecordRepository extractedRecordRepository,
             RestClient.Builder restClientBuilder,
             ObjectMapper objectMapper,
             PlatformTransactionManager transactionManager,
@@ -77,6 +77,7 @@ public class EmployeeAgentConversationServiceImpl
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
         this.memoryRepository = memoryRepository;
+        this.extractedRecordRepository = extractedRecordRepository;
 
         this.aiServiceClient = restClientBuilder
                 .baseUrl(aiServiceUrl)
@@ -254,7 +255,11 @@ public class EmployeeAgentConversationServiceImpl
          * Load active memories and build the employee context.
          */
         Map<String, Object> employeeContext =
-                buildEmployeeContext(agent, request.asOfDate());
+                buildEmployeeContext(
+                        conversation,
+                        agent,
+                        request.asOfDate()
+                );
 
         /*
          * Step 4:
@@ -347,6 +352,7 @@ public class EmployeeAgentConversationServiceImpl
     // --------------------------------------------------
 
     private Map<String, Object> buildEmployeeContext(
+            AgentConversation conversation,
             EmployeeAgent agent,
             LocalDate asOfDate
     ) {
@@ -359,6 +365,7 @@ public class EmployeeAgentConversationServiceImpl
         String fullName = readJsonText(employeeData, "Full Name");
         String title = readJsonText(employeeData, "Title");
         String department = readJsonText(employeeData, "Department");
+        String managerId = readJsonText(employeeData, "Manager ID");
 
         if (fullName == null || title == null || department == null) {
             throw new ResponseStatusException(
@@ -402,6 +409,31 @@ public class EmployeeAgentConversationServiceImpl
         context.put("full_name", fullName);
         context.put("title", title);
         context.put("department", department);
+        context.put("manager", resolveManager(managerId));
+        context.put(
+                "responsibilities",
+                readStringList(
+                        agent.getPersonaConfig().get("responsibilities")
+                )
+        );
+        context.put(
+                "professional_background",
+                readJsonText(employeeData, "Professional Background")
+        );
+        context.put(
+                "relevant_colleagues",
+                readMapList(
+                        agent.getPersonaConfig().get("relevantColleagues")
+                )
+        );
+        context.put(
+                "department_context",
+                readMap(agent.getPersonaConfig().get("departmentContext"))
+        );
+        context.put(
+                "conversation_history",
+                recentConversationHistory(conversation)
+        );
 
         context.put(
                 "persona_config",
@@ -419,6 +451,49 @@ public class EmployeeAgentConversationServiceImpl
         );
 
         return context;
+    }
+
+    private Map<String, Object> resolveManager(String managerId) {
+        if (managerId == null || managerId.isBlank()) {
+            return null;
+        }
+
+        List<ExtractedRecord> records =
+                extractedRecordRepository.findEmployeeMasterRecordsByEmployeeCodes(
+                        List.of(managerId)
+                );
+
+        if (records.size() != 1) {
+            return Map.of("employee_code", managerId);
+        }
+
+        JsonNode data = records.get(0).getExtractedData().path("data");
+        Map<String, Object> manager = new HashMap<>();
+        manager.put("employee_code", readJsonText(data, "Emp ID"));
+        manager.put("full_name", readJsonText(data, "Full Name"));
+        manager.put("title", readJsonText(data, "Title"));
+        manager.put("department", readJsonText(data, "Department"));
+        return manager;
+    }
+
+    private List<Map<String, Object>> recentConversationHistory(
+            AgentConversation conversation
+    ) {
+        return messageRepository
+                .findAllByConversation_IdOrderByCreatedAtDescIdDesc(
+                        conversation.getId()
+                )
+                .stream()
+                .skip(1)
+                .limit(10)
+                .map(message -> {
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("role", message.getRole().name());
+                    item.put("content", message.getContent());
+                    item.put("created_at", message.getCreatedAt());
+                    return item;
+                })
+                .toList();
     }
 
     private Map<String, Object> toMemoryContext(AgentMemory memory) {
