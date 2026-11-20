@@ -1,5 +1,5 @@
 from typing import Any, Literal
-
+from datetime import date
 from pydantic import BaseModel, Field, model_validator
 
 
@@ -104,7 +104,7 @@ class AgentResponse(BaseModel):
     evidence: list[dict[str, Any]]
     confidence: ConfidenceAssessment
     limitations: list[str]
-    
+
 
 class EmployeeMemoryContext(BaseModel):
     memory_type: Literal["FACT", "PREFERENCE", "COMMITMENT", "ASSUMPTION"]
@@ -121,6 +121,7 @@ class EmployeeAgentContext(BaseModel):
     persona_config: dict[str, Any] = Field(default_factory=dict)
     system_context: str | None = Field(default=None, max_length=8000)
     memories: list[EmployeeMemoryContext] = Field(default_factory=list, max_length=50)
+    as_of_date: date | None = None
 
 
 class EmployeeAgentRespondRequest(BaseModel):

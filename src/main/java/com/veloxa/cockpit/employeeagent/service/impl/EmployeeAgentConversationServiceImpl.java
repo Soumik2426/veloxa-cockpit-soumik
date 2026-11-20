@@ -6,6 +6,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -251,7 +254,7 @@ public class EmployeeAgentConversationServiceImpl
          * Load active memories and build the employee context.
          */
         Map<String, Object> employeeContext =
-                buildEmployeeContext(agent);
+                buildEmployeeContext(agent, request.asOfDate());
 
         /*
          * Step 4:
@@ -344,7 +347,8 @@ public class EmployeeAgentConversationServiceImpl
     // --------------------------------------------------
 
     private Map<String, Object> buildEmployeeContext(
-            EmployeeAgent agent
+            EmployeeAgent agent,
+            LocalDate asOfDate
     ) {
 
         JsonNode extractedData =
@@ -363,15 +367,31 @@ public class EmployeeAgentConversationServiceImpl
             );
         }
 
-        List<AgentMemory> activeMemories =
-                memoryRepository
-                        .findAllByAgent_IdAndMemoryStatusOrderByCreatedAtDesc(
-                                agent.getId(),
-                                MemoryStatus.ACTIVE
-                        );
+        List<AgentMemory> selectedMemories;
+
+        if (asOfDate == null) {
+
+            selectedMemories = memoryRepository
+                    .findAllByAgent_IdAndMemoryStatusOrderByCreatedAtDesc(
+                            agent.getId(),
+                            MemoryStatus.ACTIVE
+                    );
+
+        } else {
+
+            OffsetDateTime endExclusive = asOfDate
+                    .plusDays(1)
+                    .atStartOfDay(ZoneId.of("Asia/Kolkata"))
+                    .toOffsetDateTime();
+
+            selectedMemories = memoryRepository.findMemoriesAsOf(
+                    agent.getEmployeeCode(),
+                    endExclusive
+            );
+        }
 
         List<Map<String, Object>> memoryContexts =
-                activeMemories.stream()
+                selectedMemories.stream()
                         .limit(MAX_MEMORIES)
                         .map(this::toMemoryContext)
                         .toList();
@@ -382,14 +402,21 @@ public class EmployeeAgentConversationServiceImpl
         context.put("full_name", fullName);
         context.put("title", title);
         context.put("department", department);
+
         context.put(
                 "persona_config",
                 agent.getPersonaConfig() == null
                         ? Map.of()
                         : agent.getPersonaConfig()
         );
+
         context.put("system_context", agent.getSystemContext());
         context.put("memories", memoryContexts);
+
+        context.put(
+                "as_of_date",
+                asOfDate == null ? null : asOfDate.toString()
+        );
 
         return context;
     }

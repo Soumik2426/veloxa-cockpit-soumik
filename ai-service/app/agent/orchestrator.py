@@ -1094,6 +1094,20 @@ def answer_question(
     evidence = []
     limitations = []
 
+    historical_date = (
+        employee_context.get("as_of_date")
+        if employee_context
+        else None
+    )
+
+    if historical_date:
+        limitations.append(
+            "Historical filtering was applied to employee-agent memories "
+            f"as of {historical_date}. Structured SQL records and document "
+            "retrieval use currently ingested data and are not historically "
+            "versioned by this request."
+        )
+
     sql_count = 0
     rag_count = 0
     dependent_lookup_completed = False
@@ -1507,6 +1521,20 @@ def answer_question(
             "preferences, commitments, and assumptions. It is not a "
             "substitute for retrieved evidence.\n"
             f"{json.dumps(employee_context, ensure_ascii=False, default=str)}\n\n"
+        )
+
+    if historical_date:
+        employee_context_text += (
+            "\nHISTORICAL RESPONSE INSTRUCTIONS:\n"
+            f"The requested historical date is {historical_date}.\n"
+            "The employee memories supplied in the context were filtered "
+            "to memories recorded and valid by the end of that date.\n"
+            "Answer from that historical employee perspective. Do not use "
+            "later memories as if the employee knew them on that date.\n"
+            "IMPORTANT: SQL and document retrieval are not historically "
+            "filtered. Do not present current source records as proof of "
+            "what was known on the requested historical date. Clearly "
+            "disclose this limitation when relevant.\n\n"
         )
 
     answer_prompt = (
