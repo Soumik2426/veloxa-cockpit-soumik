@@ -13,9 +13,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/agent")
-@RequiredArgsConstructor
 public class AgentController {
     private final AgentService agentService;
+
+    AgentController(AgentService agentService) {
+        this.agentService = agentService;
+    }
 
 
     @PostMapping("/ask")
