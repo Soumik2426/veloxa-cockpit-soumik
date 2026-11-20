@@ -1,10 +1,10 @@
+import AskCompany from './pages/AskCompany';
 import AgentChat from './pages/AgentChat';
 import AgentConversations from './pages/AgentConversations';
 import AgentProfile from './pages/AgentProfile';
 import { useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import {
-  MessageSquare,
   ShieldAlert,
   Mic,
   Database,
@@ -45,16 +45,7 @@ function AppContent() {
               path="/conversations/:conversationId/messages"
               element={<AgentChat />}
             />
-            <Route
-              path="/ask-company"
-              element={
-                <PagePlaceholder
-                  title="Ask Company"
-                  description="Ask questions across company records, documents and employee knowledge."
-                  icon={MessageSquare}
-                />
-              }
-            />
+            <Route path="/ask-company" element={<AskCompany />} />
 
             <Route
               path="/risks"

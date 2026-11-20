@@ -1,3 +1,5 @@
+
+import { useEffect, useState } from 'react';
 import {
   Activity,
   AlertTriangle,
@@ -6,68 +8,100 @@ import {
   ArrowRight,
   Database,
   ShieldCheck,
+  RefreshCw,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const metrics = [
-  {
-    label: 'Business Health',
-    value: '—',
-    note: 'Awaiting verified business metrics',
-    icon: Activity,
-  },
-  {
-    label: 'Open Concerns',
-    value: '—',
-    note: 'Awaiting risk intelligence',
-    icon: AlertTriangle,
-  },
-  {
-    label: 'Employee Agents',
-    value: '14',
-    note: 'Configured employee agents',
-    icon: Users,
-  },
-  {
-    label: 'Pending Decisions',
-    value: '—',
-    note: 'Awaiting decision data',
-    icon: MessageSquare,
-  },
-];
-
-const shortcuts = [
-  {
-    title: 'Ask your company',
-    description:
-      'Get answers grounded in structured records and company documents.',
-    path: '/ask-company',
-    icon: MessageSquare,
-  },
-  {
-    title: 'Employee intelligence',
-    description:
-      'Explore the 14 employee agents and their individual knowledge.',
-    path: '/agents',
-    icon: Users,
-  },
-  {
-    title: 'Monitor business risks',
-    description:
-      'Review emerging concerns, conflicting evidence and unresolved issues.',
-    path: '/risks',
-    icon: ShieldCheck,
-  },
-  {
-    title: 'Review voice notes',
-    description:
-      'Inspect CEO instructions, resulting changes and written pushbacks.',
-    path: '/voice-notes',
-    icon: Activity,
-  },
-];
+import { agentApi } from '../api/agentApi';
 
 export default function Overview() {
+  const [agentCount, setAgentCount] = useState<number | null>(null);
+  const [loadingAgents, setLoadingAgents] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadAgents() {
+      try {
+        const agents = await agentApi.getAllAgents();
+
+        if (active) {
+          setAgentCount(agents.length);
+        }
+      } catch (error) {
+        console.error('[Overview] Failed to load agents:', error);
+      } finally {
+        if (active) {
+          setLoadingAgents(false);
+        }
+      }
+    }
+
+    void loadAgents();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const metrics = [
+    {
+      label: 'Business Health',
+      value: '—',
+      note: 'Awaiting verified business metrics',
+      icon: Activity,
+    },
+    {
+      label: 'Open Concerns',
+      value: '—',
+      note: 'Awaiting risk intelligence',
+      icon: AlertTriangle,
+    },
+    {
+      label: 'Employee Agents',
+      value: loadingAgents ? '...' : agentCount === null ? '—' : String(agentCount),
+      note: 'Registered employee agents',
+      icon: Users,
+    },
+    {
+      label: 'Pending Decisions',
+      value: '—',
+      note: 'Awaiting decision data',
+      icon: MessageSquare,
+    },
+  ];
+
+  const shortcuts = [
+    {
+      title: 'Ask your company',
+      description:
+        'Get answers grounded in structured records and company documents.',
+      path: '/ask-company',
+      icon: MessageSquare,
+    },
+    {
+      title: 'Employee intelligence',
+      description:
+        'Explore employee agents and their individual knowledge.',
+      path: '/agents',
+      icon: Users,
+    },
+    {
+      title: 'Monitor business risks',
+      description:
+        'Review emerging concerns, conflicting evidence and unresolved issues.',
+      path: '/risks',
+      icon: ShieldCheck,
+    },
+    {
+      title: 'Review voice notes',
+      description:
+        'Inspect CEO instructions, resulting changes and written pushbacks.',
+      path: '/voice-notes',
+      icon: Activity,
+    },
+  ];
+
   return (
     <div className="page-content">
       <div className="page-heading overview-heading">
@@ -95,6 +129,13 @@ export default function Overview() {
           </article>
         ))}
       </section>
+
+      {agentCount !== null && (
+        <p className="overview-data-note">
+          <RefreshCw size={13} />
+          Employee count retrieved from the live employee-agent API.
+        </p>
+      )}
 
       <section className="section-block">
         <div className="section-heading">
@@ -145,7 +186,7 @@ export default function Overview() {
             </div>
             <div>
               <h3>Employee simulation</h3>
-              <p>14 role-specific employee agents</p>
+              <p>Role-specific employee agents</p>
             </div>
           </div>
 
