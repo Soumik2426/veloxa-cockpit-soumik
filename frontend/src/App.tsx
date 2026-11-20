@@ -1,3 +1,4 @@
+import AgentConversations from './pages/AgentConversations';
 import AgentProfile from './pages/AgentProfile';
 import { useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
@@ -35,6 +36,10 @@ function AppContent() {
             <Route path="/" element={<Overview />} />
             <Route path="/agents" element={<EmployeeAgents />} />
             <Route path="/agents/:employeeCode" element={<AgentProfile />} />
+            <Route
+              path="/agents/:employeeCode/conversations"
+              element={<AgentConversations />}
+            />
 
             <Route
               path="/ask-company"

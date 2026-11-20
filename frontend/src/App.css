@@ -981,3 +981,148 @@ main {
     flex-direction: column;
   }
 }
+
+/* Agent conversations */
+
+.conversation-form-card {
+  margin-bottom: 25px;
+  padding: 22px;
+  border: 1px solid #e3e9f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.conversation-form-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.conversation-form-heading h3 {
+  margin: 0;
+  color: #273449;
+  font-size: 14px;
+}
+
+.conversation-form-heading p {
+  margin-top: 6px;
+  color: #8994a4;
+  font-size: 11px;
+}
+
+.conversation-form-card form label {
+  display: block;
+  margin-bottom: 8px;
+  color: #53647b;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.conversation-title-input {
+  width: 100%;
+  height: 43px;
+  padding: 0 13px;
+  border: 1px solid #dfe5ec;
+  border-radius: 7px;
+  outline: none;
+  color: #344257;
+  background: #fff;
+  font-size: 12px;
+}
+
+.conversation-title-input:focus {
+  border-color: #7197c5;
+  box-shadow: 0 0 0 3px rgba(65, 107, 159, 0.08);
+}
+
+.conversation-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 17px;
+}
+
+.conversation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.conversation-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 17px;
+  border: 1px solid #e8ebef;
+  border-radius: 9px;
+  background: #fff;
+  text-align: left;
+  transition: border 0.2s, background 0.2s;
+}
+
+.conversation-item:hover {
+  border-color: #c8d8ed;
+  background: #fbfcfe;
+}
+
+.conversation-item-icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 10px;
+  color: #416b9f;
+  background: #edf3fa;
+}
+
+.conversation-item-content {
+  min-width: 0;
+  flex: 1;
+}
+
+.conversation-item-content h3 {
+  overflow: hidden;
+  margin: 0;
+  color: #273449;
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conversation-item-content p {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 7px;
+  color: #929dac;
+  font-size: 10px;
+}
+
+.conversation-status {
+  padding: 5px 8px;
+  border-radius: 5px;
+  color: #278365;
+  background: #edf7f2;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.conversation-form-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+@media (max-width: 600px) {
+  .conversation-item {
+    gap: 10px;
+    padding: 13px;
+  }
+
+  .conversation-status {
+    display: none;
+  }
+}
